@@ -31,6 +31,7 @@ bin/
 run/
 logs/
 holder/
+!forge/1.7.10-mapping/src/main/java/org/mtr/mapping/holder/
 common/src/main/java/de
 common/src/main/java/org/mtr/mapping/mixin
 fabric/*/src/test/java/org/mtr/mapping/test/SearchForMappedMethodsTest.java

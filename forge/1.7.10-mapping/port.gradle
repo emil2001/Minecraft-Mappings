@@ -1,0 +1,86 @@
+buildscript {
+    repositories { mavenCentral(); gradlePluginPortal() }
+    dependencies { classpath 'com.github.johnrengelman:shadow:8.1.1' }
+}
+apply plugin: com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
+
+def gameProbe = providers.gradleProperty('mtrGameProbe').isPresent()
+def probes = [mtrWorldProbe: ['WorldProbe', 'world-probe'], mtrLiftProbe: ['LiftProbe', 'lift-probe'],
+    mtrLiftReloadProbe: ['LiftReloadProbe', 'lift-reload-probe'],
+    mtrLiftMenuProbe: ['LiftMenuProbe', 'lift-menu-probe'],
+    mtrDashboardGuiProbe: ['DashboardGuiProbe', 'dashboard-gui-probe'],
+    mtrWaterProbe: ['WaterProbe', 'water-probe'],
+    mtrCraftingProbe: ['CraftingProbe', 'crafting-probe'],
+    mtrTrainReloadProbe: ['TrainReloadProbe', 'train-reload-probe'],
+    mtrBoatProbe: ['BoatProbe', 'boat-probe'], mtrCableProbe: ['CableProbe', 'cable-probe'],
+    mtrAirplaneProbe: ['AirplaneProbe', 'airplane-probe'], mtrSignalsTrafficProbe: ['SignalsTrafficProbe', 'signals-traffic-probe'],
+    mtrPerformanceProbe: ['PerformanceProbe', 'performance-probe'],
+    mtrTrainProbe: ['TrainProbe', 'train-probe'], mtrMultiplayerProbe: ['MultiplayerProbe', 'multiplayer-probe']]
+    .findAll { option, value -> providers.gradleProperty(option).isPresent() }.values().toList()
+if (probes.size() > 1) throw new GradleException('Select only one MTR gameplay probe')
+def selection = probes ? probes[0] : ['MenuProbe', 'probe']
+def selectedProbe = selection[0]
+def probeClassifier = selection[1]
+
+if (gameProbe) {
+    tasks.named('compileMtrApi') {
+        source fileTree('../../../mtr/gtnh/src/probe/java') {
+            include "**/${selectedProbe}.java"
+        }
+    }
+}
+
+// One assembly and one MCP-to-SRG pass for both MTR and its legacy backend.
+configurations { portLibraries }
+dependencies {
+    portLibraries 'com.mojang:brigadier:1.2.9'
+    portLibraries files('../../../mtr/gtnh/build/compat/Transport-Simulation-Core-0.0.1.jar',
+        '../../../mtr/libs/Shadow-Libraries-util-0.0.1.jar','../../../mtr/libs/Shadow-Libraries-net-0.0.1.jar')
+    def narrator = new groovy.json.JsonSlurper().parse(file('build-inputs/narrator-runtime.json'))
+    portLibraries files(narrator.libraries.collect { new File(dependencyInputs, it.file) })
+}
+
+tasks.named('shadowJar') {
+    dependsOn compileMtrApi, prepareCoreForTests
+    archiveBaseName = 'MTR-GTNH'
+    archiveVersion = '4.0.5-gtnh.0'
+    archiveClassifier = 'dev-all'
+    configurations = [project.configurations.portLibraries]
+    from(tasks.named('compileMtrApi').flatMap { it.destinationDirectory })
+    from('../../../mtr/gtnh/build/classes/java/main')
+    // A previous probe compilation must never leak into a different probe or release.
+    if (!gameProbe) exclude 'org/mtr/gtnh/probe/**'
+    else exclude { entry ->
+        if (entry.isDirectory() || !entry.path.startsWith('org/mtr/gtnh/probe/')) return false
+        def name = entry.path.substring('org/mtr/gtnh/probe/'.length())
+        name != selectedProbe + '.class' &&
+            !(name.startsWith(selectedProbe + '$') && name.endsWith('.class') && !name.contains('/'))
+    }
+    exclude 'META-INF/*.SF','META-INF/*.RSA','META-INF/*.DSA','META-INF/INDEX.LIST'
+    exclude 'META-INF/versions/**','module-info.class'
+    mergeServiceFiles()
+    relocate 'com.mojang.brigadier','org.mtr.gtnh.libraries.com.mojang.brigadier'
+    relocate 'com.logisticscraft.occlusionculling','org.mtr.gtnh.libraries.com.logisticscraft.occlusionculling'
+    relocate 'de.javagl.obj','org.mtr.gtnh.libraries.de.javagl.obj'
+    // shortcut: narrator's private SLF4J uses NOP; add a legacy binding if its diagnostics are needed.
+    relocate 'org.slf4j','org.mtr.gtnh.libraries.org.slf4j'
+    manifest {
+        attributes 'FMLCorePlugin':'org.mtr.mapping.core.MtrLoadingPlugin',
+            'FMLCorePluginContainsFMLMod':'true','Implementation-Version':'4.0.5-gtnh.0'
+    }
+}
+
+tasks.named('reobfJar') {
+    setInputJarFromTask(tasks.named('shadowJar'))
+    archiveBaseName = 'MTR-GTNH'
+    archiveVersion = '4.0.5-gtnh.0'
+    archiveClassifier = gameProbe ? probeClassifier : ''
+    destinationDirectory = file('../../../mtr/gtnh/build/libs')
+}
+
+tasks.register('reobfPortJar') { dependsOn tasks.named('reobfJar') }
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}

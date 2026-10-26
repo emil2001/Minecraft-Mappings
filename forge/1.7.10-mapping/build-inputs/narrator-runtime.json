@@ -1,0 +1,40 @@
+{
+  "source": "Pinned original Minecraft 1.20.4 runtime libraries already cached by the verified upstream build",
+  "libraries": [
+    {
+      "coordinate": "com.mojang:text2speech:1.17.9",
+      "file": "text2speech-1.17.9.jar",
+      "sha1": "3cad216e3a7f0c19b4b394388bc9ffc446f13b14",
+      "sha256": "c2a95b499e76fada7dd63e9b0ec797b678d411c2b0ee6f37f4dc674662bfb0af",
+      "bytes": 12243
+    },
+    {
+      "coordinate": "net.java.dev.jna:jna:5.13.0",
+      "file": "jna-5.13.0.jar",
+      "sha1": "1200e7ebeedbe0d10062093f32925a912020e747",
+      "sha256": "66d4f819a062a51a1d5627bffc23fac55d1677f0e0a1feba144aabdd670a64bb",
+      "bytes": 1879325
+    },
+    {
+      "coordinate": "net.java.dev.jna:jna-platform:5.13.0",
+      "file": "jna-platform-5.13.0.jar",
+      "sha1": "88e9a306715e9379f3122415ef4ae759a352640d",
+      "sha256": "474d7b88f6e97009b6ec1d98c3024dd95c23187c65dabfbc35331bcac3d173dd",
+      "bytes": 1363209
+    },
+    {
+      "coordinate": "ca.weblite:java-objc-bridge:1.1",
+      "file": "java-objc-bridge-1.1.jar",
+      "sha1": "1227f9e0666314f9de41477e3ec277e542ed7f7b",
+      "sha256": "77e34a13bccffc6c8b1a0e3ed46ddb0ea7dd56f2104ecdfacaaec9e4054ac332",
+      "bytes": 1330045
+    },
+    {
+      "coordinate": "org.slf4j:slf4j-api:2.0.7",
+      "file": "slf4j-api-2.0.7.jar",
+      "sha1": "41eb7184ea9d556f23e18b5cb99cad1f8581fc00",
+      "sha256": "5d6298b93a1905c32cda6478808ac14c2d4a47e91535e53c41f7feeb85d946f4",
+      "bytes": 63635
+    }
+  ]
+}

@@ -1,0 +1,241 @@
+plugins {
+    id 'java-library'
+    id 'com.gtnewhorizons.retrofuturagradle' version '1.4.9'
+}
+
+group = 'org.mtr'
+version = '0.0.1-gtnh.0'
+
+repositories {
+    maven { url file('../../../local-maven') }
+    mavenCentral()
+    maven { url 'https://libraries.minecraft.net/' }
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
+}
+
+ext.dependencyInputs = file(providers.gradleProperty('mtrDependencies').getOrElse('../../../dependencies'))
+def angelicaInput = file(providers.gradleProperty('mtrAngelica').getOrElse(
+    '../../../client/data/instances/MTR-GTNH-Port/.minecraft/mods/angelica-2.2.28.jar'))
+
+sourceSets.main.java.srcDir '../../common/src/main/java'
+sourceSets.main.resources {
+    srcDir '../../../mtr/fabric/src/main/resources'
+    include 'pack.mcmeta'
+    include 'data/*/loot_tables/blocks/*.json'
+    include 'data/*/recipes/*.json'
+    include 'data/*/tags/items/*.json'
+    include 'assets/**'
+    include 'META-INF/licenses/**'
+    include 'META-INF/mtr/**'
+}
+
+def vanillaTextureManifest = new groovy.json.JsonSlurper().parse(file('src/main/resources/META-INF/mtr/vanilla-textures.json'))
+def vanillaTextureClient = new File(dependencyInputs, 'minecraft-1.20.4-client.jar')
+def vanillaTextures = layout.buildDirectory.dir('vanilla-textures')
+tasks.register('prepareVanillaBlockTextures', Sync) {
+    inputs.file 'src/main/resources/META-INF/mtr/vanilla-textures.json'
+    from({ zipTree(vanillaTextureClient) }) {
+        include vanillaTextureManifest.textures.collect { "assets/minecraft/textures/${it}.png" }
+        eachFile { path = path.replace('assets/minecraft/', 'assets/mtr_compat/') }
+    }
+    from({ zipTree(vanillaTextureClient) }) {
+        include vanillaTextureManifest.textures.collect { "assets/minecraft/textures/${it}.png" }
+    }
+    includeEmptyDirs = false
+    into vanillaTextures
+    doFirst {
+        def hash = java.security.MessageDigest.getInstance('SHA-256').digest(vanillaTextureClient.bytes).encodeHex().toString()
+        if (hash != vanillaTextureManifest.sha256) throw new GradleException('Minecraft texture input differs from the pinned official client')
+    }
+    doLast {
+        if (fileTree(vanillaTextures).matching { include '**/*.png' }.files.size() != vanillaTextureManifest.textures.size() * 2)
+            throw new GradleException('A required modern vanilla block texture is missing')
+    }
+}
+sourceSets.main.resources.srcDir vanillaTextures
+processResources.dependsOn prepareVanillaBlockTextures
+
+// Reuse the Java 8 parser (including MTR's group fixes) from the pinned upstream bundle.
+def objLibrary = layout.buildDirectory.dir('mtr-obj-library')
+tasks.register('prepareObjLibrary', Sync) {
+    from(zipTree(file('../../../mtr/libs/Minecraft-Mappings-common-0.0.1.jar'))) { include 'de/javagl/obj/**' }
+    into objLibrary
+}
+sourceSets.main.compileClasspath += files(objLibrary)
+sourceSets.main.output.dir(objLibrary, builtBy: 'prepareObjLibrary')
+compileJava.dependsOn prepareObjLibrary
+
+def occlusionManifest = new groovy.json.JsonSlurper().parse(file('src/main/resources/META-INF/mtr/occlusionculling.json'))
+def occlusionInput = new File(dependencyInputs, 'occlusionculling-0.0.9-SNAPSHOT.jar')
+def occlusionLibrary = layout.buildDirectory.dir('occlusion-library')
+tasks.register('prepareOcclusionLibrary', Sync) {
+    inputs.file 'src/main/resources/META-INF/mtr/occlusionculling.json'
+    from(zipTree(occlusionInput)) {
+        include 'com/logisticscraft/occlusionculling/**', 'LICENSE'
+        eachFile { if (path == 'LICENSE') path = 'META-INF/licenses/mtr-occlusionculling-LICENSE.txt' }
+    }
+    into occlusionLibrary
+    doFirst {
+        def hash = java.security.MessageDigest.getInstance('SHA-256').digest(occlusionInput.bytes).encodeHex().toString()
+        if (hash != occlusionManifest.sha256) throw new GradleException('Occlusion library differs from the pinned MTR baseline')
+    }
+    doLast {
+        if (fileTree(occlusionLibrary).matching { include '**/*.class' }.files.size() != occlusionManifest.classes)
+            throw new GradleException('The complete pinned occlusion library must be packaged')
+    }
+}
+sourceSets.main.compileClasspath += files(occlusionLibrary)
+sourceSets.main.output.dir(occlusionLibrary, builtBy: 'prepareOcclusionLibrary')
+compileJava.dependsOn prepareOcclusionLibrary
+
+minecraft {
+    mcVersion.set('1.7.10')
+    mcpMappingChannel.set('stable')
+    mcpMappingVersion.set('12')
+    username.set('MTRPortTest')
+}
+
+dependencies {
+    compileOnly files(new File(dependencyInputs, 'text2speech-1.17.9.jar'))
+    compileOnly files(angelicaInput)
+    testImplementation files(angelicaInput)
+    implementation 'com.mojang:brigadier:1.2.9'
+    compileOnly('org.lwjgl:lwjgl-glfw:3.3.2') { transitive = false }
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+    testRuntimeOnly('org.lwjgl.lwjgl:lwjgl:2.9.4-nightly-20150209') { transitive = false }
+    testRuntimeOnly('org.lwjgl.lwjgl:lwjgl_util:2.9.4-nightly-20150209') { transitive = false }
+}
+
+compileJava.options.release = 8
+compileTestJava.options.release = 8
+tasks.named('decompileSrgJar') {
+    java17Launcher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    })
+}
+test {
+    useJUnitPlatform()
+    doFirst { systemProperty 'mtr.testClasspath', sourceSets.test.runtimeClasspath.asPath }
+    systemProperty 'mtr.lootResources', file('../../../mtr/fabric/src/main/resources/data').absolutePath
+    systemProperty 'mtr.modelResources', file('../../../mtr/fabric/src/main/resources/assets/mtr/models').absolutePath
+    testLogging { events 'passed', 'failed', 'skipped' }
+}
+
+// Optional hardware check, using only libraries from the isolated Prism copy.
+if (providers.gradleProperty('mtrGlClient').isPresent()) {
+    def clientRoot = file(providers.gradleProperty('mtrGlClient').get())
+    def nativeLibraries = files(['lwjgl', 'lwjgl-opengl', 'lwjgl-sdl', 'lwjgl-natives-macos-arm64',
+        'lwjgl-opengl-natives-macos-arm64', 'lwjgl-sdl-natives-macos-arm64'].collect {
+        fileTree(new File(clientRoot, "libraries/org/lwjgl/${it}")) { include '**/*.jar' }
+    })
+    def shim = new File(clientRoot, 'instances/MTR-GTNH-Port/.minecraft/mods/lwjgl3ify-3.0.37.jar')
+    sourceSets.create('glTest') {
+        java.srcDir 'src/glTest/java'
+        compileClasspath = nativeLibraries + files(shim) + files({ sourceSets.test.runtimeClasspath })
+        runtimeClasspath = output + compileClasspath.filter { !it.name.startsWith('lwjgl-2.') && !it.name.startsWith('lwjgl_util-2.') }
+    }
+    tasks.named('compileGlTestJava') { dependsOn testClasses; options.release = 8 }
+    tasks.register('nativeGraphicsTest', JavaExec) {
+        dependsOn glTestClasses
+        classpath = sourceSets.glTest.runtimeClasspath
+        mainClass = 'org.mtr.mapping.gltest.NativeGraphicsMain'
+        jvmArgs '-XstartOnFirstThread', '-Dorg.lwjgl.opengl.explicitInit=true'
+        systemProperty 'mtr.glClasspath', sourceSets.glTest.runtimeClasspath.asPath
+        systemProperty 'mtr.vanillaAssets', new File(clientRoot, 'libraries/com/mojang/minecraft/1.7.10/minecraft-1.7.10-client.jar').absolutePath
+        systemProperty 'mtr.modResources', file('../../../mtr/fabric/src/main/resources').absolutePath
+        systemProperty 'mtr.compatResources', vanillaTextures.get().asFile.absolutePath
+        systemProperty 'mtr.modernClient', vanillaTextureClient.absolutePath
+    }
+    tasks.register('nativeWaterGraphicsTest', JavaExec) {
+        description = 'Checks contained-water pixels/mesh and native non-MODEL ItemBlock fallback in a hidden GL window.'
+        dependsOn glTestClasses
+        classpath = sourceSets.glTest.runtimeClasspath
+        mainClass = 'org.mtr.mapping.gltest.WaterNativeGraphicsMain'
+        jvmArgs '-XstartOnFirstThread', '-Dorg.lwjgl.opengl.explicitInit=true'
+        systemProperty 'mtr.glClasspath', sourceSets.glTest.runtimeClasspath.asPath
+        systemProperty 'mtr.vanillaAssets', new File(clientRoot, 'libraries/com/mojang/minecraft/1.7.10/minecraft-1.7.10-client.jar').absolutePath
+    }
+}
+
+def mtrBlockTestClasses = layout.buildDirectory.dir('mtr-block-tests/classes')
+def coreTestLibraries = files('../../../mtr/libs/Transport-Simulation-Core-0.0.1.jar',
+    '../../../mtr/libs/Shadow-Libraries-util-0.0.1.jar', '../../../mtr/libs/Shadow-Libraries-net-0.0.1.jar')
+tasks.register('prepareCoreForTests', GradleBuild) {
+    onlyIf { !providers.gradleProperty('mtrCorePrepared').isPresent() }
+    dir = file('../../../mtr/gtnh')
+    tasks = ['classes']
+    startParameter.offline = gradle.startParameter.offline
+    startParameter.projectProperties = gradle.startParameter.projectProperties
+}
+tasks.register('compileMtrBlockTests', JavaCompile) {
+    description = 'Compiles original gameplay callers with test-only registration/lifecycle fixtures; never packaged.'
+    dependsOn classes
+    source fileTree('../../../mtr/fabric/src/main/java') {
+        include 'org/mtr/mod/block/IBlock.java', 'org/mtr/mod/block/BlockEscalator*.java'
+        include 'org/mtr/mod/block/BlockStationColorSlab.java'
+        include 'org/mtr/mod/block/BlockRubbishBin.java'
+        include 'org/mtr/mod/item/ItemDriverKey.java', 'org/mtr/mod/item/ItemCreativeDriverKey.java', 'org/mtr/mod/item/ItemBlockEnchanted.java'
+        include 'org/mtr/mod/block/BlockStationColor.java', 'org/mtr/mod/block/BlockStationColorGlass.java', 'org/mtr/mod/block/BlockStationColorGlassSlab.java'
+        include 'org/mtr/mod/packet/PacketRequestResponseBase.java', 'org/mtr/mod/packet/PacketPressLiftButton.java'
+        include 'org/mtr/mod/sound/VehicleLoopingSoundInstance.java', 'org/mtr/mod/sound/LoopingSoundInstance.java'
+        include 'org/mtr/mod/screen/MTRScreenBase.java'
+        include 'org/mtr/mod/screen/WidgetShorterSlider.java', 'org/mtr/mod/data/IGui.java', 'org/mtr/mod/generated/lang/TranslationProvider.java'
+        include 'org/mtr/mod/resource/ModelResourceLoader.java', 'org/mtr/mod/resource/MqoModelConverter.java'
+        include 'org/mtr/mod/resource/ResourceProvider.java', 'org/mtr/mod/resource/CustomResourceTools.java', 'org/mtr/mod/resource/OptimizedModelWrapper.java'
+        include 'org/mtr/mod/data/PersistentStateData.java'
+        include 'org/mtr/mod/render/PositionAndRotation.java'
+    }
+    source fileTree('src/mtrTest/java')
+    classpath = sourceSets.main.output + sourceSets.main.compileClasspath + coreTestLibraries
+    destinationDirectory = mtrBlockTestClasses
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+    options.release = 8
+}
+compileTestJava.dependsOn compileMtrBlockTests, prepareCoreForTests
+sourceSets.test.compileClasspath += files(mtrBlockTestClasses) + coreTestLibraries
+sourceSets.test.runtimeClasspath += files(mtrBlockTestClasses,
+    '../../../mtr/gtnh/build/compat/Transport-Simulation-Core-0.0.1.jar',
+    '../../../mtr/gtnh/build/classes/java/main',
+    '../../../mtr/libs/Shadow-Libraries-util-0.0.1.jar', '../../../mtr/libs/Shadow-Libraries-net-0.0.1.jar')
+
+tasks.register('compileMtrApi', JavaCompile) {
+    description = 'Reports remaining source API gaps against all common MTR game code; does not package a mod.'
+    dependsOn classes
+    source fileTree('../../../mtr/fabric/src/main/java') { include 'org/mtr/mod/**/*.java', 'org/mtr/legacy/**/*.java' }
+    source fileTree('../../../mtr/gtnh/src/game/java')
+    classpath = sourceSets.main.output + sourceSets.main.compileClasspath + files(
+        '../../../mtr/libs/Transport-Simulation-Core-0.0.1.jar',
+        '../../../mtr/libs/Shadow-Libraries-util-0.0.1.jar',
+        '../../../mtr/libs/Shadow-Libraries-net-0.0.1.jar')
+    destinationDirectory = layout.buildDirectory.dir('mtr-api-audit/classes')
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+    options.release = 8
+    options.compilerArgs += ['-Xmaxerrs', '10000']
+}
+
+def ridingPermissionTestClasses = layout.buildDirectory.dir('riding-permission-tests/classes')
+tasks.register('compileRidingPermissionBridge', JavaCompile) {
+    description = 'Compiles actual riding authorization/key/packet callers for tests; never packaged.'
+    dependsOn compileMtrApi, compileMtrBlockTests, prepareCoreForTests
+    source fileTree('../../../mtr/gtnh/src/game/java') { include 'org/mtr/gtnh/RidingPermissions.java', 'org/mtr/gtnh/CoreRidingSnapshots.java' }
+    source fileTree('../../../mtr/fabric/src/main/java') {
+        include 'org/mtr/mod/item/ItemDriverKey.java', 'org/mtr/mod/item/ItemDepotDriverKey.java', 'org/mtr/mod/item/ItemCreativeDriverKey.java'
+        include 'org/mtr/mod/packet/PacketUpdateVehicleRidingEntities.java'
+    }
+    // Compile against production Init's API; only the existing Init.forward fixture enters the test runtime.
+    classpath = files(layout.buildDirectory.dir('mtr-api-audit/classes'), mtrBlockTestClasses) + sourceSets.main.output + sourceSets.main.compileClasspath + coreTestLibraries
+    destinationDirectory = ridingPermissionTestClasses
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+    options.release = 8
+}
+compileTestJava.dependsOn compileRidingPermissionBridge
+sourceSets.test.compileClasspath += files(ridingPermissionTestClasses)
+sourceSets.test.runtimeClasspath += files(ridingPermissionTestClasses)
+sourceSets.test.compileClasspath += files(layout.buildDirectory.dir('mtr-api-audit/classes'))
+sourceSets.test.runtimeClasspath += files(layout.buildDirectory.dir('mtr-api-audit/classes'))
+
+if (providers.gradleProperty('mtrProduction').isPresent()) apply from: 'port.gradle'

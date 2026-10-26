@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        maven {
+            url = uri('../../../local-maven')
+            content { includeModule 'com.gtnewhorizons', 'retrofuturagradle' }
+        }
+        maven { url = 'https://nexus.gtnewhorizons.com/repository/public/' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+rootProject.name = 'MTR-Mappings-Forge-1.7.10'
