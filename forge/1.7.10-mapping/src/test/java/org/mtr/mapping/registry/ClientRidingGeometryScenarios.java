@@ -76,7 +76,7 @@ public final class ClientRidingGeometryScenarios {
         if(hasFloor) floors.add(new ObjectBooleanImmutablePair<>(new Box(-2,1,-5,2,1,5),true));
         VehicleRidingMovement.movePlayer(50,77,0,floors,null,null,null,new PositionAndRotation(new Vector(100,64,200),0,0));
     }
-    private static final class Fixture implements AutoCloseable {
+    static final class Fixture implements AutoCloseable {
         final NativeClientFixture client=new NativeClientFixture();
         final List<byte[]> packets=new ArrayList<>(); final Map<Field,Object> state=new HashMap<>();
         final LegacyNetwork previous; final LegacyNetwork network; final Channel channel;

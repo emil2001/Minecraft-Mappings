@@ -30,7 +30,13 @@ public final class ClientPlayerEntity extends NativeHolder<net.minecraft.entity.
     public void setVelocity(double x, double y, double z) { data.setVelocity(x, y, z); }
     public void setMovementSpeed(float value) { data.setAIMoveSpeed(value); }
     // Native posY includes eye offset and sneak smoothing; MTR positions refer to feet.
-    public void updatePosition(double x, double y, double z) { data.setPosition(x, y + data.yOffset - data.ySize, z); }
+    public void updatePosition(double x, double y, double z) {
+        data.setPosition(x, y + data.yOffset - data.ySize, z);
+        // Riding positions already advance each frame; native tick interpolation must not advance them again.
+        data.prevPosX = data.lastTickPosX = data.posX;
+        data.prevPosY = data.lastTickPosY = data.posY;
+        data.prevPosZ = data.lastTickPosZ = data.posZ;
+    }
     public void sendMessage(Text text, boolean actionBar) {
         if (actionBar) net.minecraft.client.Minecraft.getMinecraft().ingameGUI.func_110326_a(text.data.getFormattedText(), false);
         else data.addChatMessage(text.data);

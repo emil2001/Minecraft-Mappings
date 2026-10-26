@@ -9,6 +9,7 @@ def probes = [mtrWorldProbe: ['WorldProbe', 'world-probe'], mtrLiftProbe: ['Lift
     mtrLiftReloadProbe: ['LiftReloadProbe', 'lift-reload-probe'],
     mtrLiftMenuProbe: ['LiftMenuProbe', 'lift-menu-probe'],
     mtrDashboardGuiProbe: ['DashboardGuiProbe', 'dashboard-gui-probe'],
+    mtrIconRenderProbe: ['IconRenderProbe', 'icon-render-probe'],
     mtrWaterProbe: ['WaterProbe', 'water-probe'],
     mtrCraftingProbe: ['CraftingProbe', 'crafting-probe'],
     mtrTrainReloadProbe: ['TrainReloadProbe', 'train-reload-probe'],
@@ -43,7 +44,7 @@ dependencies {
 tasks.named('shadowJar') {
     dependsOn compileMtrApi, prepareCoreForTests
     archiveBaseName = 'MTR-GTNH'
-    archiveVersion = '4.0.5-gtnh.0'
+    archiveVersion = '4.0.5-gtnh.1'
     archiveClassifier = 'dev-all'
     configurations = [project.configurations.portLibraries]
     from(tasks.named('compileMtrApi').flatMap { it.destinationDirectory })
@@ -66,14 +67,14 @@ tasks.named('shadowJar') {
     relocate 'org.slf4j','org.mtr.gtnh.libraries.org.slf4j'
     manifest {
         attributes 'FMLCorePlugin':'org.mtr.mapping.core.MtrLoadingPlugin',
-            'FMLCorePluginContainsFMLMod':'true','Implementation-Version':'4.0.5-gtnh.0'
+            'FMLCorePluginContainsFMLMod':'true','Implementation-Version':'4.0.5-gtnh.1'
     }
 }
 
 tasks.named('reobfJar') {
     setInputJarFromTask(tasks.named('shadowJar'))
     archiveBaseName = 'MTR-GTNH'
-    archiveVersion = '4.0.5-gtnh.0'
+    archiveVersion = '4.0.5-gtnh.1'
     archiveClassifier = gameProbe ? probeClassifier : ''
     destinationDirectory = file('../../../mtr/gtnh/build/libs')
 }

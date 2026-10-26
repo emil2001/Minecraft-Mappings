@@ -81,7 +81,7 @@ public final class NativeDoorPushOutScenarios {
             World world=new World(nativeWorld); BlockPos pos=new BlockPos(4,64,4);
             org.mtr.mod.block.BlockTicketBarrier gate=new org.mtr.mod.block.BlockTicketBarrier(true);
             BlockPlacementScenarios.registerProbe("native_push_out_opaque_ticket_barrier",gate);
-            assertTrue(gate.isOpaqueCube(),"This regression needs the original opaque gate settings");
+            assertFalse(gate.isOpaqueCube(),"The original gate's partial shape cannot hide an ordinary neighboring block face");
             EntityPlayerSP player=new EntityPlayerSP(fixture.client,nativeWorld,
                 new net.minecraft.util.Session("MtrGateTest",UUID.randomUUID().toString(),"","legacy"),0) {
                     @Override public String getCommandSenderName() { return ""; }

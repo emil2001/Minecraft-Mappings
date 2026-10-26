@@ -4,6 +4,7 @@ import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.IResourceManager;
 import org.mtr.mapping.tool.NativeHolder;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.util.Objects;
 
 @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
@@ -25,11 +26,10 @@ public final class NativeImageBackedTexture extends NativeHolder<NativeImageBack
         void upload() {
             if (image == null) throw new IllegalStateException("Texture is closed");
             BufferedImage pixels = image.data.getImage();
-            if (allocated) TextureUtil.uploadTextureImageSub(getGlTextureId(), pixels, 0, 0, false, false);
-            else {
-                TextureUtil.uploadTextureImageAllocate(getGlTextureId(), pixels, false, false);
-                allocated = true;
-            }
+            int texture = getGlTextureId();
+            if (!allocated) TextureUtil.allocateTexture(texture, pixels.getWidth(), pixels.getHeight());
+            TextureUtil.uploadTexture(texture, ((DataBufferInt) pixels.getRaster().getDataBuffer()).getData(), pixels.getWidth(), pixels.getHeight());
+            allocated = true;
         }
         @Override public void deleteGlTexture() {
             try { super.deleteGlTexture(); }

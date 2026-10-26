@@ -74,6 +74,7 @@ public final class GraphicsCompatibilityScenarios {
             textures.loadTexture(new ResourceLocation("mtr:test_white"),
                 new net.minecraft.client.renderer.texture.DynamicTexture(new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB) {{ setRGB(0, 0, -1); }}));
             StyleGraphicsScenarios.run(client);
+            NativeMapTextureGraphicsScenarios.run(client);
             AngelicaAtlasGraphicsScenarios.run(client);
             translucentQuadsSortFromBothCameraSides();
             renderingCarrierUsesNativeRendererAndSurvivesTinyBoxCulling(client);

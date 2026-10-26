@@ -22,6 +22,15 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
             } catch (NoSuchMethodException impossible) { throw new IllegalStateException(impossible); }
         }
     };
+    // Native neighbors have no state/world here; only the default culling shape guarantees a solid cube.
+    private static final ClassValue<Boolean> DEFAULT_FULL_CUBE_CULLING=new ClassValue<Boolean>() {
+        @Override protected Boolean computeValue(Class<?> type) {
+            try {
+                return type.getMethod("getCullingShape2",BlockState.class,BlockView.class,BlockPos.class).getDeclaringClass()==BlockAbstractMapping.class
+                    && type.getMethod("getOutlineShape2",BlockState.class,BlockView.class,BlockPos.class,ShapeContext.class).getDeclaringClass()==BlockAbstractMapping.class;
+            } catch (NoSuchMethodException impossible) { throw new IllegalStateException(impossible); }
+        }
+    };
     @Override public String getLocalizedName() {
         return net.minecraft.util.StatCollector.translateToLocal(getTranslationKey2());
     }
@@ -268,10 +277,12 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
         }
         return bounds == null ? null : bounds.getOffsetBoundingBox(x, y, z);
     }
-    @Override public boolean isOpaqueCube() { return settings == null || settings.opaque; }
+    // Native Block reads this before settings exists to initialize lightOpacity; preserve that constructor default.
+    @Override public boolean isOpaqueCube() { return settings == null || settings.opaque && DEFAULT_FULL_CUBE_CULLING.get(getClass()); }
+    @Override public boolean renderAsNormalBlock() { return isOpaqueCube(); }
     @Override public boolean isNormalCube() { return isOpaqueCube() && DEFAULT_FULL_CUBE_COLLISION.get(getClass()) && super.isNormalCube(); }
     @Override public boolean isNormalCube(net.minecraft.world.IBlockAccess world,int x,int y,int z) {
-        if (world==null || !isOpaqueCube() || !super.isNormalCube()) return false;
+        if (world==null || settings!=null && !settings.opaque || !getMaterial().isOpaque() || canProvidePower()) return false;
         BlockView view=new BlockView(world); BlockPos pos=new BlockPos(x,y,z); BlockState state=view.getBlockState(pos);
         return state.getBlock().data==this && org.mtr.mapping.tool.LegacyBlockOcclusion.isFullCube(getCollisionShape2(state,view,pos,new ShapeContext(null)));
     }

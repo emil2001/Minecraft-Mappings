@@ -57,7 +57,8 @@ public class SlabBlockExtension extends BlockExtension implements Waterloggable 
     @Override public boolean isOpaqueCube() { return false; }
     @Override public boolean renderAsNormalBlock() { return false; }
     @Override public boolean isNormalCube(net.minecraft.world.IBlockAccess world,int x,int y,int z) {
-        return super.isOpaqueCube() && getType(new BlockView(world).getBlockState(new BlockPos(x,y,z)))==SlabType.DOUBLE;
+        BlockView view=new BlockView(world); BlockPos pos=new BlockPos(x,y,z);
+        return isOpaqueFullCube2(view.getBlockState(pos),view,pos);
     }
     @Override public boolean isSideSolid(net.minecraft.world.IBlockAccess world,int x,int y,int z,net.minecraftforge.common.util.ForgeDirection side) {
         SlabType type=getType(new BlockView(world).getBlockState(new BlockPos(x,y,z)));

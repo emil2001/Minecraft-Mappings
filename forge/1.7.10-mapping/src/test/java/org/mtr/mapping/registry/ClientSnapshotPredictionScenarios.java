@@ -5,6 +5,7 @@ import org.mtr.core.operation.VehicleUpdate;
 import org.mtr.core.serializer.JsonReader;
 import org.mtr.core.tool.Angle;
 import org.mtr.core.tool.Utilities;
+import org.mtr.core.tool.Vector;
 import org.mtr.libraries.com.google.gson.*;
 import org.mtr.libraries.it.unimi.dsi.fastutil.objects.*;
 import org.mtr.mapping.NativeClientFixture;
@@ -12,6 +13,7 @@ import org.mtr.mod.client.MinecraftClientData;
 import org.mtr.mod.data.PersistentVehicleData;
 import org.mtr.mod.data.VehicleExtension;
 import org.mtr.mod.packet.PacketUpdateVehiclesLifts;
+import org.mtr.mod.render.PositionAndRotation;
 import java.lang.reflect.Method;
 import java.util.function.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,11 +75,105 @@ public final class ClientSnapshotPredictionScenarios {
         }
     }
 
+    public void brakingCorrectionDoesNotJumpWhenClientReachesPlatform() throws Exception {
+        checkBrakingCorrection(76,false,false);
+    }
+
+    public void negativeBrakingCorrectionAlsoConvergesAtPlatform() throws Exception {
+        checkBrakingCorrection(80,false,false);
+    }
+
+    public void stoppedDtoAfterBrakingLandsAtPlatformWithClosedDoors() throws Exception {
+        checkBrakingCorrection(76,true,false);
+    }
+
+    public void stoppedDtoAfterBrakingLandsAtPlatformWithOpeningDoors() throws Exception {
+        checkBrakingCorrection(76,true,true);
+    }
+
+    private static void checkBrakingCorrection(double oldProgress,boolean stoppedDto,boolean openDoors) throws Exception {
+        try (Fixture f = new Fixture()) {
+            VehicleExtension old = new VehicleExtension(snapshot(77,oldProgress),f.data);
+            PathData.writePathCache(old.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            old.simulate(0);
+            double previousPosition = renderedZ(old,16);
+            assertTrue(previousPosition > oldProgress - 6 && previousPosition < oldProgress - 3,"Use the original cached rail and car geometry");
+            VehicleExtension braking = new VehicleExtension(snapshot(77,78,0.0046,-1),f.data);
+            PathData.writePathCache(braking.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            assertSame(old.persistentVehicleData,braking.persistentVehicleData);
+            braking.simulate(0);
+            assertEquals(previousPosition,renderedZ(braking,0),1E-10,
+                    "The two-metre correction must start continuous, below the nine-metre teleport cutoff");
+
+            double lastStep = Double.NaN, previousSpeed = Double.NaN;
+            int frames = 0;
+            while (braking.getSpeed() > 0 && frames++ < 2000) {
+                previousSpeed = braking.getSpeed();
+                if (stoppedDto && 88 - progress(braking) <= previousSpeed * 16) {
+                    VehicleExtension stopped = new VehicleExtension(snapshot(77,88,0,0,openDoors),f.data,() -> 16);
+                    PathData.writePathCache(stopped.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+                    assertSame(braking.persistentVehicleData,stopped.persistentVehicleData);
+                    braking = stopped;
+                }
+                braking.simulate(16);
+                double position = renderedZ(braking,16);
+                lastStep = position - previousPosition;
+                previousPosition = position;
+            }
+            assertEquals(0,braking.getSpeed(),0,"Exercise Core's actual braking-to-stop transition");
+            assertEquals(88,progress(braking),0,"Core must reach the platform without a synthetic pose write");
+            if (openDoors) assertTrue(braking.persistentVehicleData.getDoorValue() > 0,"The first stopped render must already see opening doors");
+            else assertEquals(0,braking.persistentVehicleData.getDoorValue(),0,"Closed doors exercise the arriving stop transition");
+            assertEquals(carZ(braking.getVehicleCarsAndPositions().get(0)),previousPosition,1E-10,
+                    "Rendered car and door geometry must land exactly at Core's platform position");
+            double continuousStep = previousSpeed * 16 * 1.1;
+            System.out.println("Native train stop smoothing: frames=" + frames + ", last rendered step=" + lastStep + ", continuous bound=" + continuousStep);
+            assertTrue(Math.abs(lastStep) <= continuousStep + 1E-8,
+                    "A client stop must not discard the remaining snapshot correction in one rendered frame: moved " + lastStep + "m, bound " + continuousStep + "m");
+        }
+    }
+
+    public void freshAndLargeDiscontinuousSnapshotsKeepTheirOriginalPlacement() throws Exception {
+        try (Fixture f = new Fixture()) {
+            VehicleExtension fresh = new VehicleExtension(snapshot(77,60),f.data);
+            PathData.writePathCache(fresh.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            fresh.simulate(0);
+            double firstPosition = renderedZ(fresh,0);
+            assertEquals(carZ(fresh.getVehicleCarsAndPositions().get(0)),firstPosition,1E-10,
+                    "A first snapshot has no previous rendered position to correct");
+            VehicleExtension discontinuous = new VehicleExtension(snapshot(77,78,0.0046,-1),f.data);
+            PathData.writePathCache(discontinuous.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            discontinuous.simulate(0);
+            double position = renderedZ(discontinuous,0);
+            assertTrue(position - firstPosition > 9,"Retain the existing vehicle-length teleport policy");
+            assertEquals(carZ(discontinuous.getVehicleCarsAndPositions().get(0)),position,1E-10);
+        }
+    }
+
+    private static double renderedZ(VehicleExtension vehicle,long millisElapsed) {
+        return carZ(vehicle.getSmoothedVehicleCarsAndPositions(millisElapsed).get(0));
+    }
+
+    private static double carZ(ObjectObjectImmutablePair<VehicleCar,ObjectArrayList<ObjectObjectImmutablePair<Vector,Vector>>> car) {
+        ObjectArrayList<PositionAndRotation> bogies = new ObjectArrayList<>();
+        for (ObjectObjectImmutablePair<Vector,Vector> pair : car.right())
+            bogies.add(new PositionAndRotation(pair.left(),pair.right(),false));
+        return new PositionAndRotation(bogies,car.left(),false).position.z;
+    }
+
     private static double progress(Vehicle vehicle) {
         return Utilities.getJsonObjectFromData(vehicle).get("railProgress").getAsDouble();
     }
 
     private static VehicleUpdate snapshot(long id, double progress) {
+        return snapshot(id,progress,SPEED,SPEED);
+    }
+
+    private static VehicleUpdate snapshot(long id, double progress, double speed, double speedTarget) {
+        return snapshot(id,progress,speed,speedTarget,false);
+    }
+
+    private static VehicleUpdate snapshot(long id, double progress, double speed, double speedTarget, boolean openDoors) {
         Data data = new Data() {};
         Position start = new Position(0,64,0), end = new Position(0,64,100);
         Rail rail = Rail.newRail(start,Angle.S,end,Angle.N,Rail.Shape.QUADRATIC,0,new ObjectArrayList<>(),10,10,true,false,false,false,false,TransportMode.TRAIN);
@@ -87,14 +183,16 @@ public final class ClientSnapshotPredictionScenarios {
         extra.addProperty("totalVehicleLength",10); extra.addProperty("railLength",10);
         extra.addProperty("totalDistance",100); extra.addProperty("defaultPosition",0);
         extra.addProperty("acceleration",0.000001); extra.addProperty("deceleration",0.000001);
-        extra.addProperty("stoppingPoint",88); extra.addProperty("speedTarget",SPEED); extra.addProperty("powerLevel",5);
+        extra.addProperty("stoppingPoint",88); extra.addProperty("speedTarget",speedTarget); extra.addProperty("powerLevel",speedTarget < 0 ? -5 : 5);
         JsonArray cars = new JsonArray(); cars.add(Utilities.getJsonObjectFromData(new VehicleCar("test",10,3,-3,3,0,0))); extra.add("vehicleCars",cars);
         JsonArray paths = new JsonArray(); paths.add(Utilities.getJsonObjectFromData(path)); extra.add("path",paths);
+        if (openDoors) extra.addProperty("doorTarget",true);
         VehicleExtraData details = new VehicleExtraData(new JsonReader(extra));
+        if (openDoors) assertEquals(1,details.getDoorMultiplier(),"The Core DTO must retain the opening door target");
         PathData.writePathCache(details.immutablePath,data,TransportMode.TRAIN);
         JsonObject definition = new JsonObject();
         definition.addProperty("id",id); definition.addProperty("transportMode","TRAIN");
-        definition.addProperty("railProgress",progress); definition.addProperty("speed",SPEED);
+        definition.addProperty("railProgress",progress); definition.addProperty("speed",speed);
         Vehicle seed = new Vehicle(details,null,new JsonReader(definition),data);
         // Reconstruct through the bundled Core DTO schema, as network deserialization does.
         return new VehicleUpdate(new JsonReader(Utilities.getJsonObjectFromData(new VehicleUpdate(seed,details))));
