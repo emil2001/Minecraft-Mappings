@@ -14,7 +14,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public final class SoundCompatibilityScenarios {
-    private static final class Engine implements AutoCloseable {
+    static final class Engine implements AutoCloseable {
         final NativeClientFixture fixture = new NativeClientFixture();
         final SoundHandler handler;
         final net.minecraft.client.audio.SoundManager manager;

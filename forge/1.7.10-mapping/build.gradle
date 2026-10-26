@@ -119,6 +119,7 @@ tasks.named('decompileSrgJar') {
 }
 test {
     useJUnitPlatform()
+    maxHeapSize = '1g'
     doFirst { systemProperty 'mtr.testClasspath', sourceSets.test.runtimeClasspath.asPath }
     systemProperty 'mtr.lootResources', file('../../../mtr/fabric/src/main/resources/data').absolutePath
     systemProperty 'mtr.modelResources', file('../../../mtr/fabric/src/main/resources/assets/mtr/models').absolutePath
