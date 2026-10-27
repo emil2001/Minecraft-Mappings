@@ -230,7 +230,7 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
             net.minecraft.util.AxisAlignedBB mask, java.util.List boxes, net.minecraft.entity.Entity entity) {
         BlockView view = new BlockView(world);
         BlockPos pos = new BlockPos(x, y, z);
-        for (Box box : getCollisionShape2(view.getBlockState(pos), view, pos, new ShapeContext(entity)).data) {
+        for (Box box : getCollisionShape2(nativeShapeState(view, pos), view, pos, new ShapeContext(entity)).data) {
             net.minecraft.util.AxisAlignedBB translated = box.data.getOffsetBoundingBox(x, y, z);
             if (translated.intersectsWith(mask)) boxes.add(translated);
         }
@@ -240,7 +240,7 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
         BlockView view = new BlockView(world);
         BlockPos pos = new BlockPos(x, y, z);
         net.minecraft.util.MovingObjectPosition nearest = null;
-        for (Box box : getOutlineShape2(view.getBlockState(pos), view, pos, new ShapeContext(null)).data) {
+        for (Box box : getOutlineShape2(nativeShapeState(view, pos), view, pos, new ShapeContext(null)).data) {
             net.minecraft.util.MovingObjectPosition hit = box.data.getOffsetBoundingBox(x, y, z).calculateIntercept(start, end);
             if (hit != null && (nearest == null || start.squareDistanceTo(hit.hitVec) < start.squareDistanceTo(nearest.hitVec))) {
                 nearest = new net.minecraft.util.MovingObjectPosition(x, y, z, hit.sideHit, hit.hitVec);
@@ -267,7 +267,12 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
     @Override public net.minecraft.util.AxisAlignedBB getSelectedBoundingBoxFromPool(net.minecraft.world.World world, int x, int y, int z) {
         BlockView view = new BlockView(world);
         BlockPos pos = new BlockPos(x, y, z);
-        return enclosingBounds(getOutlineShape2(view.getBlockState(pos), view, pos, new ShapeContext(null)), x, y, z);
+        return enclosingBounds(getOutlineShape2(nativeShapeState(view, pos), view, pos, new ShapeContext(null)), x, y, z);
+    }
+    private BlockState nativeShapeState(BlockView view, BlockPos pos) {
+        BlockState state = view.getBlockState(pos);
+        // Destroy particles can query the old block after the client has received its removal.
+        return state.getBlock().data == this ? state : getDefaultState2();
     }
     private static net.minecraft.util.AxisAlignedBB enclosingBounds(VoxelShape shape, int x, int y, int z) {
         net.minecraft.util.AxisAlignedBB bounds = null;
