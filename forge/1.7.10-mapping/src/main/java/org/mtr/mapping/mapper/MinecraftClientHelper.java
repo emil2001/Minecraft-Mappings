@@ -15,6 +15,33 @@ public final class MinecraftClientHelper {
     private MinecraftClientHelper() {}
     public static int getRenderDistance() { return Minecraft.getMinecraft().gameSettings.renderDistanceChunks; }
     public static File getResourcePackDirectory() { return Minecraft.getMinecraft().getResourcePackRepository().getDirResourcepacks(); }
+    public static java.nio.file.Path getDashboardMapCacheDirectory(org.mtr.mapping.holder.World world) {
+        Minecraft client = Minecraft.getMinecraft();
+        if (world == null || client.theWorld == null || world.data != client.theWorld || world.data.provider == null || client.mcDataDir == null) return null;
+        java.nio.file.Path base = client.mcDataDir.toPath().resolve("mtr/dashboard-map-cache/v1");
+        int dimension = world.data.provider.dimensionId;
+        try {
+            net.minecraft.server.integrated.IntegratedServer server = client.getIntegratedServer();
+            if (server != null) {
+                // worldServerForDimension can initialize a world; identity must only inspect loaded worlds.
+                if (server.worldServers != null) for (net.minecraft.world.WorldServer loaded : server.worldServers) {
+                    if (loaded != null && loaded.provider != null && loaded.provider.dimensionId == 0) {
+                        net.minecraft.world.storage.ISaveHandler saveHandler = loaded.getSaveHandler();
+                        if (saveHandler == null) return null;
+                        File save = saveHandler.getWorldDirectory();
+                        return save == null ? null : org.mtr.mapping.tool.DashboardMapIdentity.singleplayer(base,
+                            save.getCanonicalFile().toPath(), loaded.getSeed(), dimension);
+                    }
+                }
+                return null;
+            }
+            net.minecraft.client.multiplayer.ServerData remote = client.func_147104_D();
+            if (remote == null || remote.serverIP == null || remote.serverIP.trim().isEmpty()) return null;
+            return org.mtr.mapping.tool.DashboardMapIdentity.multiplayer(base, remote.serverIP, dimension);
+        } catch (java.io.IOException | SecurityException exception) {
+            return null;
+        }
+    }
     public static void getEntities(Consumer<Entity> consumer) {
         WorldClient world = Minecraft.getMinecraft().theWorld;
         if (world == null) return;
