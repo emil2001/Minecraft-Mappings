@@ -16,7 +16,8 @@ def probes = [mtrWorldProbe: ['WorldProbe', 'world-probe'], mtrLiftProbe: ['Lift
     mtrBoatProbe: ['BoatProbe', 'boat-probe'], mtrCableProbe: ['CableProbe', 'cable-probe'],
     mtrAirplaneProbe: ['AirplaneProbe', 'airplane-probe'], mtrSignalsTrafficProbe: ['SignalsTrafficProbe', 'signals-traffic-probe'],
     mtrPerformanceProbe: ['PerformanceProbe', 'performance-probe'],
-    mtrTrainProbe: ['TrainProbe', 'train-probe'], mtrMultiplayerProbe: ['MultiplayerProbe', 'multiplayer-probe']]
+    mtrTrainProbe: ['TrainProbe', 'train-probe'], mtrMultiplayerProbe: ['MultiplayerProbe', 'multiplayer-probe'],
+    mtrDedicatedLiftProbe: ['DedicatedLiftProbe', 'dedicated-lift-probe']]
     .findAll { option, value -> providers.gradleProperty(option).isPresent() }.values().toList()
 if (probes.size() > 1) throw new GradleException('Select only one MTR gameplay probe')
 def selection = probes ? probes[0] : ['MenuProbe', 'probe']
@@ -44,7 +45,7 @@ dependencies {
 tasks.named('shadowJar') {
     dependsOn compileMtrApi, prepareCoreForTests
     archiveBaseName = 'MTR-GTNH'
-    archiveVersion = '4.0.5-gtnh.5'
+    archiveVersion = '4.0.5-gtnh.6'
     archiveClassifier = 'dev-all'
     configurations = [project.configurations.portLibraries]
     from(tasks.named('compileMtrApi').flatMap { it.destinationDirectory })
@@ -67,14 +68,14 @@ tasks.named('shadowJar') {
     relocate 'org.slf4j','org.mtr.gtnh.libraries.org.slf4j'
     manifest {
         attributes 'FMLCorePlugin':'org.mtr.mapping.core.MtrLoadingPlugin',
-            'FMLCorePluginContainsFMLMod':'true','Implementation-Version':'4.0.5-gtnh.5'
+            'FMLCorePluginContainsFMLMod':'true','Implementation-Version':'4.0.5-gtnh.6'
     }
 }
 
 tasks.named('reobfJar') {
     setInputJarFromTask(tasks.named('shadowJar'))
     archiveBaseName = 'MTR-GTNH'
-    archiveVersion = '4.0.5-gtnh.5'
+    archiveVersion = '4.0.5-gtnh.6'
     archiveClassifier = gameProbe ? probeClassifier : ''
     destinationDirectory = file('../../../mtr/gtnh/build/libs')
 }
