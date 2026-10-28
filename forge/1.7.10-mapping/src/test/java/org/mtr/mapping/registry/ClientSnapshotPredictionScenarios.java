@@ -75,6 +75,49 @@ public final class ClientSnapshotPredictionScenarios {
         }
     }
 
+    public void queuedBrakingSnapshotDoesNotReplayQueueAgeIntoVisibleMotion() throws Exception {
+        checkBrakingSnapshotFrame(49.5,100);
+    }
+
+    public void zeroAgeBrakingSnapshotDoesNotFreezeTheVisibleFrame() throws Exception {
+        checkBrakingSnapshotFrame(50.1,0);
+    }
+
+    private static void checkBrakingSnapshotFrame(double snapshotProgress,long receiptAge) throws Exception {
+        try (Fixture f = new Fixture()) {
+            final double fortyKmh = 40D / 3600;
+            VehicleExtension old = new VehicleExtension(snapshot(77,50,fortyKmh,fortyKmh),f.data);
+            PathData.writePathCache(old.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            old.simulate(0);
+            double previousPosition = renderedZ(old,16);
+            VehicleExtension braking = new VehicleExtension(snapshot(77,snapshotProgress,fortyKmh,-1),f.data,() -> receiptAge);
+            PathData.writePathCache(braking.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            braking.simulate(16);
+            if (receiptAge == 0) assertEquals(50.1,progress(braking),0,"A zero-age DTO must not invent authoritative simulation time");
+            else assertTrue(progress(braking) > 50.5 && progress(braking) < 50.7,"The actual Core prediction still consumes the complete 100ms receipt age");
+            double step = renderedZ(braking,16) - previousPosition;
+            System.out.println("Braking snapshot: receiptAge="+receiptAge+", frame=16ms, renderedStep="+step);
+            assertTrue(step >= .10 && step <= .25,
+                    "At 40km/h a 16ms frame advances about 0.178m, regardless of the snapshot queue age; actual step="+step);
+        }
+    }
+
+    public void negativeSnapshotCorrectionCannotCarryTheTrainPastItsPlatform() throws Exception {
+        try (Fixture f = new Fixture()) {
+            double brakingSpeed = Math.sqrt(2E-6 * .1);
+            VehicleExtension old = new VehicleExtension(snapshot(77,87.9999,brakingSpeed,-1),f.data);
+            PathData.writePathCache(old.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            old.simulate(0);
+            double previousPosition = renderedZ(old,0);
+            VehicleExtension braking = new VehicleExtension(snapshot(77,87.9,brakingSpeed,-1),f.data,() -> 0);
+            PathData.writePathCache(braking.vehicleExtraData.immutablePath,f.data,TransportMode.TRAIN);
+            braking.simulate(16);
+            double position = renderedZ(braking,16);
+            assertTrue(position <= previousPosition + .0001 + 1E-10,
+                    "A delayed braking DTO may still be moving, but its displayed car cannot pass the platform by "+(position-previousPosition-.0001)+"m");
+        }
+    }
+
     public void brakingCorrectionDoesNotJumpWhenClientReachesPlatform() throws Exception {
         checkBrakingCorrection(76,false,false);
     }

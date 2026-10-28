@@ -8,6 +8,9 @@ class ClientSnapshotPredictionTest {
     @Test void freshCoreSnapshotDoesNotReplayTheGlobalPreInstallFrame() throws Throwable { run("freshCoreSnapshotDoesNotReplayTheGlobalPreInstallFrame"); }
     @Test void packetReplacementResetsOnlyTheNewInstanceAndKeepRetainsPrediction() throws Throwable { run("packetReplacementResetsOnlyTheNewInstanceAndKeepRetainsPrediction"); }
     @Test void firstZeroFrameIsConsumedAndFollowingDeltasRemainExact() throws Throwable { run("firstZeroFrameIsConsumedAndFollowingDeltasRemainExact"); }
+    @Test void queuedBrakingSnapshotDoesNotReplayQueueAgeIntoVisibleMotion() throws Throwable { run("queuedBrakingSnapshotDoesNotReplayQueueAgeIntoVisibleMotion"); }
+    @Test void zeroAgeBrakingSnapshotDoesNotFreezeTheVisibleFrame() throws Throwable { run("zeroAgeBrakingSnapshotDoesNotFreezeTheVisibleFrame"); }
+    @Test void negativeSnapshotCorrectionCannotCarryTheTrainPastItsPlatform() throws Throwable { run("negativeSnapshotCorrectionCannotCarryTheTrainPastItsPlatform"); }
     @Test void brakingCorrectionDoesNotJumpWhenClientReachesPlatform() throws Throwable { run("brakingCorrectionDoesNotJumpWhenClientReachesPlatform"); }
     @Test void negativeBrakingCorrectionAlsoConvergesAtPlatform() throws Throwable { run("negativeBrakingCorrectionAlsoConvergesAtPlatform"); }
     @Test void stoppedDtoAfterBrakingLandsAtPlatformWithClosedDoors() throws Throwable { run("stoppedDtoAfterBrakingLandsAtPlatformWithClosedDoors"); }
