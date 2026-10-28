@@ -45,7 +45,7 @@ dependencies {
 tasks.named('shadowJar') {
     dependsOn compileMtrApi, prepareCoreForTests
     archiveBaseName = 'MTR-GTNH'
-    archiveVersion = '4.0.5-gtnh.12'
+    archiveVersion = '4.0.5-gtnh.13'
     archiveClassifier = 'dev-all'
     configurations = [project.configurations.portLibraries]
     from(tasks.named('compileMtrApi').flatMap { it.destinationDirectory })
@@ -68,14 +68,14 @@ tasks.named('shadowJar') {
     relocate 'org.slf4j','org.mtr.gtnh.libraries.org.slf4j'
     manifest {
         attributes 'FMLCorePlugin':'org.mtr.mapping.core.MtrLoadingPlugin',
-            'FMLCorePluginContainsFMLMod':'true','Implementation-Version':'4.0.5-gtnh.12'
+            'FMLCorePluginContainsFMLMod':'true','Implementation-Version':'4.0.5-gtnh.13'
     }
 }
 
 tasks.named('reobfJar') {
     setInputJarFromTask(tasks.named('shadowJar'))
     archiveBaseName = 'MTR-GTNH'
-    archiveVersion = '4.0.5-gtnh.12'
+    archiveVersion = '4.0.5-gtnh.13'
     archiveClassifier = gameProbe ? probeClassifier : ''
     destinationDirectory = file('../../../mtr/gtnh/build/libs')
 }

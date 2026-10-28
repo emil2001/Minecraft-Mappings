@@ -183,6 +183,8 @@ tasks.register('compileMtrBlockTests', JavaCompile) {
         include 'org/mtr/mod/block/BlockStationColor.java', 'org/mtr/mod/block/BlockStationColorGlass.java', 'org/mtr/mod/block/BlockStationColorGlassSlab.java'
         include 'org/mtr/mod/packet/PacketRequestResponseBase.java', 'org/mtr/mod/packet/PacketPressLiftButton.java'
         include 'org/mtr/mod/sound/VehicleLoopingSoundInstance.java', 'org/mtr/mod/sound/LoopingSoundInstance.java'
+        include 'org/mtr/mod/sound/ScheduledSound.java'
+        include 'org/mtr/mod/sound/VehicleSoundBase.java'
         include 'org/mtr/mod/screen/MTRScreenBase.java'
         include 'org/mtr/mod/screen/WidgetShorterSlider.java', 'org/mtr/mod/data/IGui.java', 'org/mtr/mod/generated/lang/TranslationProvider.java'
         include 'org/mtr/mod/resource/ModelResourceLoader.java', 'org/mtr/mod/resource/MqoModelConverter.java'

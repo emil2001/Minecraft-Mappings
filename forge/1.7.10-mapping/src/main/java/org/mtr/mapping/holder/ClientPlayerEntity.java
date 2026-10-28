@@ -11,6 +11,12 @@ public final class ClientPlayerEntity extends NativeHolder<net.minecraft.entity.
     public double getY() { return Entity.cast(this).getYMapped(); }
     public double getZ() { return data.posZ; }
     public Vector3d getPos() { return new Vector3d(getX(), getY(), getZ()); }
+    public Vector3d getCameraPosVec(float tickDelta) {
+        // The local player's native posY is the eye position used by SoundManager.
+        return new Vector3d(data.prevPosX + (data.posX - data.prevPosX) * tickDelta,
+            data.prevPosY + (data.posY - data.prevPosY) * tickDelta,
+            data.prevPosZ + (data.posZ - data.prevPosZ) * tickDelta);
+    }
     public BlockPos getBlockPos() { return new PlayerEntity(data).getBlockPos(); }
     public World getEntityWorld() { return new World(data.worldObj); }
     public float getForwardSpeedMapped() { return data.moveForward; }

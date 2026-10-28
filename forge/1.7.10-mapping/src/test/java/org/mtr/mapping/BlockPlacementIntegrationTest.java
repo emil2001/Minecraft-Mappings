@@ -14,6 +14,22 @@ import java.util.HashMap;
 import java.util.List;
 
 class BlockPlacementIntegrationTest {
+    @Test void scheduledDistinctSamplesArePlayedOncePerFlush() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.ScheduledSoundScenarios").getConstructor().newInstance(),
+            "scheduledDistinctSamplesArePlayedOncePerFlush");
+    }
+    @Test void scheduledIdenticalSampleUsesNearestBlockCenterInEitherOrder() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.ScheduledSoundScenarios").getConstructor().newInstance(),
+            "scheduledIdenticalSampleUsesNearestBlockCenterInEitherOrder");
+    }
+    @Test void scheduledNearestTieKeepsFirstQueuedPosition() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.ScheduledSoundScenarios").getConstructor().newInstance(),
+            "scheduledNearestTieKeepsFirstQueuedPosition");
+    }
+    @Test void scheduledFlushClearsQueueAndPreservesEmptyNullAndGainBehavior() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.ScheduledSoundScenarios").getConstructor().newInstance(),
+            "scheduledFlushClearsQueueAndPreservesEmptyNullAndGainBehavior");
+    }
     @Test void compactNullableFactoriesMayReturnNoTileEntity() throws Throwable {
         invoke(loader.loadClass("org.mtr.mapping.NullableTileFactoryScenarios").getConstructor().newInstance(),
             "compactNullableFactoriesMayReturnNoTileEntity");
