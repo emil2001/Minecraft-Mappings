@@ -292,6 +292,12 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
         return state.getBlock().data==this && org.mtr.mapping.tool.LegacyBlockOcclusion.isFullCube(getCollisionShape2(state,view,pos,new ShapeContext(null)));
     }
     @Override public int getMobilityFlag() { return settings!=null && settings.blockPiston?2:super.getMobilityFlag(); }
+    @Override public int getLightOpacity(net.minecraft.world.IBlockAccess world,int x,int y,int z) {
+        net.minecraft.block.Block actual=world.getBlock(x,y,z);
+        if (actual!=this) return actual.getLightOpacity(world,x,y,z);
+        BlockView view=new BlockView(world); BlockPos pos=new BlockPos(x,y,z);
+        return isOpaqueFullCube2(view.getBlockState(pos),view,pos)?super.getLightOpacity():0;
+    }
     @Override public int getLightValue() {
         return settings==null || settings.luminance==null?super.getLightValue():luminance(getDefaultState2());
     }

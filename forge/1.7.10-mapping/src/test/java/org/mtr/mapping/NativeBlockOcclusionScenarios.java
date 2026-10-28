@@ -37,6 +37,34 @@ public final class NativeBlockOcclusionScenarios {
         assertEquals(255,platform.getLightOpacity(),"A type-only culling fallback must not make full platforms transmit skylight");
         assertEquals(0,transparent.getLightOpacity(),"Explicit nonOpaque settings still transmit native light");
     }
+    public void thinMappedPanelsTransmitNativeWorldLight() {
+        BlockExtension[] blocks={new Partial(),new EmptyCulling(),new org.mtr.mod.block.BlockLiftPanelEven1() {
+            @Override public boolean hasTileEntity(int metadata) { return false; }
+        },new org.mtr.mod.block.BlockLiftPanelEven2() {
+            @Override public boolean hasTileEntity(int metadata) { return false; }
+        }};
+        World world=new World(new BlockPlacementScenarios.MemoryWorld()); BlockPos pos=new BlockPos(8,64,8);
+        for (int i=0;i<blocks.length;i++) {
+            BlockExtension block=blocks[i];
+            BlockPlacementScenarios.registerProbe("native_partial_light_probe_"+i,block);
+            world.setBlockState(pos,block.getDefaultState2(),2);
+            assertFalse(block.isOpaqueFullCube2(world.getBlockState(pos),new BlockView(world.data),pos));
+            assertEquals(0,block.getLightOpacity(world.data,8,64,8),"A thin panel must not block native world light as a full cube: "+block.getClass());
+        }
+        FullShape platform=new FullShape(new BlockSettings(net.minecraft.block.material.Material.iron));
+        BlockPlacementScenarios.registerProbe("native_full_platform_light_probe",platform);
+        world.setBlockState(pos,platform.getDefaultState2(),2);
+        assertEquals(255,platform.getLightOpacity(world.data,8,64,8),"A full platform keeps its light blocking despite its overridden shape");
+        assertEquals(255,platform.getLightOpacity(),"Keep the type-only light opacity unchanged");
+    }
+    public void nativeWorldLightOpacityUsesTheActualBlock() {
+        Partial oldPanel=new Partial();
+        World world=new World(new BlockPlacementScenarios.MemoryWorld()); BlockPos pos=new BlockPos(8,64,8);
+        world.setBlockState(pos,new Block(net.minecraft.init.Blocks.air).getDefaultState(),2);
+        assertEquals(0,oldPanel.getLightOpacity(world.data,8,64,8),"A stale panel query must use the replacement air block");
+        world.setBlockState(pos,new Block(net.minecraft.init.Blocks.stone).getDefaultState(),2);
+        assertEquals(255,oldPanel.getLightOpacity(world.data,8,64,8),"A stale panel query must preserve a replacement full block");
+    }
     public void fullShapeOverridesKeepNativeTorchSupportWithoutTurningTracksSolid() {
         FullShape platform=new FullShape(new BlockSettings(net.minecraft.block.material.Material.iron));
         Partial track=new Partial();

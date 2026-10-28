@@ -11,6 +11,8 @@ class NativeBlockOcclusionTest {
     @Test void nativeCubeFlagsDoNotEvaluateContextDependentShapesWithoutAWorld() throws Throwable { run("nativeCubeFlagsDoNotEvaluateContextDependentShapesWithoutAWorld"); }
     @Test void fullMappedBlocksAndDoubleSlabsKeepNativeOpacity() throws Throwable { run("fullMappedBlocksAndDoubleSlabsKeepNativeOpacity"); }
     @Test void shapeOverridesDoNotChangeNativeConfiguredLightOpacity() throws Throwable { run("shapeOverridesDoNotChangeNativeConfiguredLightOpacity"); }
+    @Test void thinMappedPanelsTransmitNativeWorldLight() throws Throwable { run("thinMappedPanelsTransmitNativeWorldLight"); }
+    @Test void nativeWorldLightOpacityUsesTheActualBlock() throws Throwable { run("nativeWorldLightOpacityUsesTheActualBlock"); }
     @Test void fullShapeOverridesKeepNativeTorchSupportWithoutTurningTracksSolid() throws Throwable { run("fullShapeOverridesKeepNativeTorchSupportWithoutTurningTracksSolid"); }
     @Test void nativePaneConnectionsRetainConfiguredOpaqueSupport() throws Throwable { run("nativePaneConnectionsRetainConfiguredOpaqueSupport"); }
     private static void run(String method) throws Throwable {
