@@ -13,6 +13,7 @@ public final class MinecraftClient extends NativeHolder<net.minecraft.client.Min
     public static MinecraftClient getInstance() { return new MinecraftClient(net.minecraft.client.Minecraft.getMinecraft()); }
     public ClientWorld getWorldMapped() { return data.theWorld == null ? null : new ClientWorld(data.theWorld); }
     public ClientPlayerEntity getPlayerMapped() { return data.thePlayer == null ? null : new ClientPlayerEntity(data.thePlayer); }
+    public Entity getCameraEntityMapped() { return data.renderViewEntity == null ? null : new Entity(data.renderViewEntity); }
     public ClientPlayNetworkHandler getNetworkHandler() { return data.getNetHandler()==null?null:new ClientPlayNetworkHandler(data.getNetHandler()); }
     public GameOptions getOptionsMapped() { return new GameOptions(data.gameSettings); }
     public Screen getCurrentScreenMapped() { return data.currentScreen == null ? null : new Screen(data.currentScreen); }

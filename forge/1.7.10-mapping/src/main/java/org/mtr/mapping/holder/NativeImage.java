@@ -53,6 +53,9 @@ public final class NativeImage extends NativeHolder<NativeImage.Pixels> implemen
         decoded.flush();
         return image;
     }
+    public void writeTo(File file) throws IOException {
+        if (!ImageIO.write(data.getImage(), "png", file)) throw new IOException("PNG writer is unavailable");
+    }
     @Override public void close() {
         BufferedImage image = data.image;
         data.image = null;

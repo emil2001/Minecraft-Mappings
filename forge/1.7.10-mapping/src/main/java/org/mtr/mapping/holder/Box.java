@@ -15,6 +15,7 @@ public final class Box extends HolderBase<AxisAlignedBB> {
     public double getMaxXMapped() { return data.maxX; }
     public double getMaxYMapped() { return data.maxY; }
     public double getMaxZMapped() { return data.maxZ; }
+    public Vector3d getCenter() { return new Vector3d((data.minX + data.maxX) / 2, (data.minY + data.maxY) / 2, (data.minZ + data.maxZ) / 2); }
     public boolean intersects(Box other) { return data.intersectsWith(other.data); }
     @Override public boolean equals(Object other) {
         if (!(other instanceof Box)) return false;

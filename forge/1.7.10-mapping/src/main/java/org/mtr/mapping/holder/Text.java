@@ -5,6 +5,7 @@ import org.mtr.mapping.tool.HolderBase;
 
 public final class Text extends HolderBase<IChatComponent> {
     public Text(IChatComponent data) { super(data); }
+    public static Text of(String text) { return new Text(new net.minecraft.util.ChatComponentText(text == null ? "" : text)); }
     public static Text cast(HolderBase<?> holder) { return new Text((IChatComponent) holder.data); }
     public String getString() { return data.getUnformattedText(); }
     public OrderedText asOrderedText() { return new OrderedText(data); }

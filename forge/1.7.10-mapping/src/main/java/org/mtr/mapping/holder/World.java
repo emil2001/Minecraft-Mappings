@@ -92,6 +92,7 @@ public final class World extends NativeHolder<net.minecraft.world.World> {
     }
     public static World cast(HolderBase<?> holder) { return new World((net.minecraft.world.World) holder.data); }
     public ChunkManager getChunkManager() { return new ChunkManager(data.getChunkProvider()); }
+    public boolean isChunkLoaded(int chunkX, int chunkZ) { return getChunkManager().isChunkLoaded(chunkX, chunkZ); }
     public Scoreboard getScoreboard() { return new Scoreboard(data.getScoreboard()); }
     public int getLightLevel(LightType type, BlockPos pos) {
         if (type.data==net.minecraft.world.EnumSkyBlock.Sky && data.provider.hasNoSky) return 0;

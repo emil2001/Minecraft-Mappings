@@ -34,6 +34,13 @@ public class ScreenExtension extends GuiScreen {
     public void resize2(MinecraftClient client, int width, int height) { super.setWorldAndResolution(client.data,width,height); }
     public final void addChild(ClickableWidget child) { buttonList.add(child.data); }
     public final void addSelectableChild(ClickableWidget child) { selectable.add(child.data); }
+    public final void setFocused(ClickableWidget child) {
+        if (focused != null) focused.setFocused2(false);
+        focused = child == null ? null : child.data;
+        for (ClickableWidgetExtension current : children()) current.setFocused2(current == focused);
+        if (focused != null) focused.setFocused2(true);
+        dragging = false;
+    }
     private List<ClickableWidgetExtension> children() {
         List<ClickableWidgetExtension> children=new ArrayList<>();
         for (Object child : buttonList) if (child instanceof ClickableWidgetExtension) children.add((ClickableWidgetExtension)child);

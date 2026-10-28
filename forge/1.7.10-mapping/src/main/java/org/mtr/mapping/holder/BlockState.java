@@ -18,6 +18,14 @@ public final class BlockState extends HolderBase<BlockStateDefinition.State> {
         return with(property, values.get((values.indexOf(get(property)) + 1) % values.size()));
     }
     public boolean isAir() { return data.definition.block.getMaterial() == net.minecraft.block.material.Material.air; }
+    public VoxelShape getOutlineShape(BlockView world, BlockPos pos) {
+        net.minecraft.block.Block block = data.definition.block;
+        if (block instanceof BlockAbstractMapping) return ((BlockAbstractMapping) block).getOutlineShape2(this, world, pos, new ShapeContext(null));
+        if (isAir()) return VoxelShapes.empty();
+        block.setBlockBoundsBasedOnState(world.data, pos.getX(), pos.getY(), pos.getZ());
+        return VoxelShapes.cuboid(block.getBlockBoundsMinX(), block.getBlockBoundsMinY(), block.getBlockBoundsMinZ(),
+            block.getBlockBoundsMaxX(), block.getBlockBoundsMaxY(), block.getBlockBoundsMaxZ());
+    }
     public FluidState getFluidState() {
         return data.definition.block instanceof BlockAbstractMapping?((BlockAbstractMapping)data.definition.block).getFluidState2(this):FluidState.fromBlockState(this);
     }

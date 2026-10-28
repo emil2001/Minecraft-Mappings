@@ -19,9 +19,13 @@ public final class BlockPos extends HolderBase<ChunkCoordinates> {
     public BlockPos down() { return down(1); }
     public BlockPos down(int distance) { return offset(Direction.DOWN, distance); }
     public BlockPos north() { return offset(Direction.NORTH); }
+    public BlockPos north(int distance) { return offset(Direction.NORTH, distance); }
     public BlockPos south() { return offset(Direction.SOUTH); }
+    public BlockPos south(int distance) { return offset(Direction.SOUTH, distance); }
     public BlockPos west() { return offset(Direction.WEST); }
+    public BlockPos west(int distance) { return offset(Direction.WEST, distance); }
     public BlockPos east() { return offset(Direction.EAST); }
+    public BlockPos east(int distance) { return offset(Direction.EAST, distance); }
     public int getManhattanDistance(Vector3i other) {
         return Math.abs(getX() - other.data.posX) + Math.abs(getY() - other.data.posY) + Math.abs(getZ() - other.data.posZ);
     }

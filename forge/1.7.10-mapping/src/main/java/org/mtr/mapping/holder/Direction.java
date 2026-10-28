@@ -22,6 +22,10 @@ public enum Direction {
     public int getOffsetX() { return data.offsetX; }
     public int getOffsetY() { return data.offsetY; }
     public int getOffsetZ() { return data.offsetZ; }
+    public int getHorizontal() {
+        for (int i = 0; i < HORIZONTAL.length; i++) if (HORIZONTAL[i] == this) return i;
+        return -1;
+    }
     public Direction getOpposite() { return convert(data.getOpposite()); }
     public Axis getAxis() { return getOffsetX() != 0 ? Axis.X : getOffsetY() != 0 ? Axis.Y : Axis.Z; }
     public float asRotation() {

@@ -13,6 +13,7 @@ import org.mtr.mapping.NativeClientFixture;
 import org.mtr.mapping.tool.PacketBufferReceiver;
 import org.mtr.mapping.tool.PacketBufferSender;
 import org.mtr.mod.client.MinecraftClientData;
+import org.mtr.mod.data.LiftExtension;
 import org.mtr.mod.packet.PacketUpdateVehiclesLifts;
 
 import java.lang.reflect.Constructor;
@@ -73,8 +74,89 @@ public final class ClientLiftArrivalScenarios {
             replacement.tick(12); authoritative.tick(60); prediction.tick(12);
             assertEquals(json(authoritative), json(replacement), "Only the new DTO uses its 60ms receipt age");
             assertPosition(position(prediction), position(replacement), "The visual prediction advances by the actual 12ms frame");
-            assertTrue(replacement.getDoorValue() > 0, "Authoritative opening doors keep their original phase");
+            assertEquals(0, replacement.getDoorValue(), "Opening waits for the rendered arrival prediction");
             settle(replacement, prediction, upward ? 16 : 0);
+        }
+    }
+
+    public void doorsStayClosedUntilTheRenderedCabinReachesItsFloor() throws Exception {
+        for (boolean upward : new boolean[]{true, false}) try (Fixture f = new Fixture()) {
+            Lift previous = f.install(moving(upward)); previous.tick(0);
+            double targetY = upward ? 88 : 72;
+            Lift authoritative = arrival(upward, 5640);
+            assertTrue(authoritative.getDoorValue() > 0, "The received DTO has already begun opening");
+            Lift current = f.install(authoritative);
+            assertEquals(0, number(current, "speed"), 0, "Server speed is already zero while the rendered cabin still moves");
+            assertNotEquals(targetY, position(current).y, "The fixture must reproduce unfinished visual arrival");
+            assertEquals(0, current.getDoorValue(), "Doors stay closed at receipt while the rendered cabin is short of its floor");
+            boolean arrived = false;
+            int[] frameMillis = {12, 0, 7, 33, 120, 5, 250};
+            for (int frame = 0; frame < 100; frame++) {
+                if (frame == 2) {
+                    f.receive(arrival(upward, 5400));
+                    f.now.addAndGet(60_000_000L); f.drain(); current = f.find();
+                    assertEquals(0, current.getDoorValue(), "A repeated stopped DTO cannot bypass the visual arrival gate");
+                }
+                current.tick(frameMillis[frame % frameMillis.length]);
+                double renderedY = position(current).y;
+                if (renderedY != targetY) {
+                    assertEquals(0, current.getDoorValue(), "No door opening before the rendered pose reaches the floor");
+                    assertEquals(0, ((LiftExtension) current).getDoorMovement(), "Door sound cannot announce opening during visual movement");
+                } else {
+                    assertEquals(0, current.getDoorValue(), "Opening starts after the displayed cabin has arrived exactly");
+                    assertEquals(0, ((LiftExtension) current).getDoorMovement());
+                    current.tick(16);
+                    assertEquals(0.01F, current.getDoorValue(), 1E-7, "The first opening frame follows the normal door speed");
+                    assertEquals(1, ((LiftExtension) current).getDoorMovement(), "Opening sound follows the visible door transition");
+                    arrived = true;
+                    break;
+                }
+            }
+            assertTrue(arrived, "The visual arrival must finish in finite time in both directions");
+        }
+    }
+
+    public void retainedArrivalDoorsUseTheFrameClockWithoutDelayingAuthority() throws Exception {
+        for (boolean upward : new boolean[]{true, false}) try (Fixture f = new Fixture()) {
+            Lift previous = f.install(moving(upward)); previous.tick(0);
+            Lift authoritative = arrival(upward, 5640);
+            Lift current = f.install(authoritative); current.tick(0);
+            double targetY = upward ? 88 : 72;
+            for (int frame = 0; frame < 100 && position(current).y != targetY; frame++) {
+                current.tick(16); authoritative.tick(16);
+                assertEquals(json(authoritative), json(current), "Presentation timing cannot alter any authoritative DTO field");
+            }
+            assertEquals(targetY, position(current).y, 0, "Normal 16ms frames must finish visual arrival");
+            assertEquals(0, current.getDoorValue(), "The arrival frame cannot jump to the server's partially open door phase");
+            int[] elapsed = {0, 16, 7, 33};
+            float[] expected = {0, 0.01F, 0.014375F, 0.035F};
+            for (int frame = 0; frame < elapsed.length; frame++) {
+                current.tick(elapsed[frame]); authoritative.tick(elapsed[frame]);
+                assertEquals(expected[frame], current.getDoorValue(), 1E-7,
+                        "Opening follows the normal 1600ms door animation using frame time after visual arrival");
+                assertEquals(json(authoritative), json(current));
+            }
+            f.receive(authoritative); f.now.addAndGet(60_000_000L); f.drain(); current = f.find();
+            assertEquals(0.035F, current.getDoorValue(), 1E-7, "A repeated stopped DTO retains the visual door phase");
+            current.tick(12); authoritative.tick(60);
+            assertEquals(0.0425F, current.getDoorValue(), 1E-7, "Visual opening uses the 12ms frame rather than the 60ms packet age");
+            current.tick(16); authoritative.tick(16);
+            assertEquals(0.0525F, current.getDoorValue(), 1E-7, "A repeated DTO cannot restart or skip opening");
+            assertEquals(json(authoritative), json(current));
+
+            Lift closing = arrival(upward, 510);
+            current = f.install(closing);
+            assertEquals(0.00625F, current.getDoorValue(), 1E-7, "The server's closing phase must take effect immediately");
+            current.tick(0); closing.tick(0);
+            current.tick(16); closing.tick(16);
+            assertEquals(0, current.getDoorValue(), "A presentation delay cannot keep the doors open past server closing");
+            assertEquals(json(closing), json(current));
+            Lift departing = snapshot(upward ? 16 : 0, upward ? -NATIVE_SPEED : NATIVE_SPEED, 0, upward ? 0 : 2);
+            current = f.install(departing); current.tick(0); departing.tick(0);
+            current.tick(16); departing.tick(16);
+            assertPosition(position(departing), position(current), "Departure follows the new moving DTO without any presentation delay");
+            assertEquals(json(departing), json(current));
+            assertEquals(0, current.getDoorValue());
         }
     }
 

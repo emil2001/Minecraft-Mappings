@@ -7,6 +7,8 @@ class ClientLiftArrivalTest {
     @AfterAll static void close() throws Exception { BlockPlacementIntegrationTest.closeForgeLoader(); }
     @Test void realCoreServerAndRenderTimestepsReproduceTheFinalReceiptCorrection() throws Throwable { run("realCoreServerAndRenderTimestepsReproduceTheFinalReceiptCorrection"); }
     @Test void confirmedArrivalRetainsTheUpwardAndDownwardVisualPrediction() throws Throwable { run("confirmedArrivalRetainsTheUpwardAndDownwardVisualPrediction"); }
+    @Test void doorsStayClosedUntilTheRenderedCabinReachesItsFloor() throws Throwable { run("doorsStayClosedUntilTheRenderedCabinReachesItsFloor"); }
+    @Test void retainedArrivalDoorsUseTheFrameClockWithoutDelayingAuthority() throws Throwable { run("retainedArrivalDoorsUseTheFrameClockWithoutDelayingAuthority"); }
     @Test void repeatedArrivalAndKeepPacketsDoNotRestartThePrediction() throws Throwable { run("repeatedArrivalAndKeepPacketsDoNotRestartThePrediction"); }
     @Test void receiptAgeAndMissedFramesKeepAuthoritativeAndVisualTimeSeparate() throws Throwable { run("receiptAgeAndMissedFramesKeepAuthoritativeAndVisualTimeSeparate"); }
     @Test void firstObservationChangedGeometryAndDifferentTargetsUseTheNewDto() throws Throwable { run("firstObservationChangedGeometryAndDifferentTargetsUseTheNewDto"); }

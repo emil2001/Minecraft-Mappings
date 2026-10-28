@@ -11,6 +11,8 @@ public final class Entity extends NativeHolder<net.minecraft.entity.Entity> {
     public double getY() { return getYMapped(); }
     public double getZ() { return getZMapped(); }
     public Vector3d getPos() { return new Vector3d(getX(),getY(),getZ()); }
+    public float getYaw(float tickDelta) { return data.prevRotationYaw + tickDelta * (data.rotationYaw - data.prevRotationYaw); }
+    public float getPitch(float tickDelta) { return data.prevRotationPitch + tickDelta * (data.rotationPitch - data.prevRotationPitch); }
     public float getWidthMapped() { return data.width; }
     public java.util.UUID getUuid() { return data.getUniqueID(); }
     public double getXMapped() { return data.posX; }

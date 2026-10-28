@@ -12,6 +12,7 @@ public final class ClientPlayerEntity extends NativeHolder<net.minecraft.entity.
     public double getZ() { return data.posZ; }
     public Vector3d getPos() { return new Vector3d(getX(), getY(), getZ()); }
     public BlockPos getBlockPos() { return new PlayerEntity(data).getBlockPos(); }
+    public World getEntityWorld() { return new World(data.worldObj); }
     public float getForwardSpeedMapped() { return data.moveForward; }
     public float getSidewaysSpeedMapped() { return data.moveStrafing; }
     public boolean isHolding(Item item) { return new PlayerEntity(data).isHolding(item); }

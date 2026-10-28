@@ -68,6 +68,7 @@ public class ClickableWidgetExtension extends GuiButton {
     public int getHeight2() { return height; }
     public void setWidth2(int width) { this.width=width; }
     public void setHeight(int height) { this.height=height; }
+    public void setHeightMapped(int height) { setHeight(height); }
     public Text getMessage2() { return message; }
     public void setMessage2(Text message) { this.message=message; displayString=message.data.getFormattedText(); }
     public boolean getActiveMapped() { return active; }
