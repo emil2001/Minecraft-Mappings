@@ -14,6 +14,18 @@ import java.util.HashMap;
 import java.util.List;
 
 class BlockPlacementIntegrationTest {
+    @Test void compactNullableFactoriesMayReturnNoTileEntity() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.NullableTileFactoryScenarios").getConstructor().newInstance(),
+            "compactNullableFactoriesMayReturnNoTileEntity");
+    }
+    @Test void extendedNullableFactoriesKeepStateOnlyPersistence() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.NullableTileFactoryScenarios").getConstructor().newInstance(),
+            "extendedNullableFactoriesKeepStateOnlyPersistence");
+    }
+    @Test void nonNullFactoriesKeepTheirFunctionalTilesAndState() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.NullableTileFactoryScenarios").getConstructor().newInstance(),
+            "nonNullFactoriesKeepTheirFunctionalTilesAndState");
+    }
     @Test void compactFunctionalTileKeepsPayloadAcrossMetadataChanges() throws Throwable {
         invoke(loader.loadClass("org.mtr.mapping.WorldMetadataScenarios").getConstructor().newInstance(),
             "compactFunctionalTileKeepsPayloadAcrossMetadataChanges");

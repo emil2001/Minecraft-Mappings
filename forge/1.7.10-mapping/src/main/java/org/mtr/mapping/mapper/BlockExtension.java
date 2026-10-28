@@ -47,7 +47,8 @@ public class BlockExtension extends BlockAbstractMapping {
         if (!hasTileEntity(metadata)) return null;
         BlockStateTileEntity tile = this instanceof BlockWithEntity
             ? ((BlockWithEntity) this).createBlockEntity(new BlockPos(0, 0, 0), getDefaultState2()) : new BlockStateTileEntity();
-        tile.setMtrState(getDefaultState2());
+        if (tile == null && getStateDefinition().requiresTileEntity()) tile = new BlockStateTileEntity();
+        if (tile != null) tile.setMtrState(getDefaultState2());
         return tile;
     }
     @Override public void onBlockAdded(net.minecraft.world.World world, int x, int y, int z) {
