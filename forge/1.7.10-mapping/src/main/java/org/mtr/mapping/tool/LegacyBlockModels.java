@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /** CPU decoder for the block model and state resources used by MTR. A missing resource returns null. */
 @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
 public final class LegacyBlockModels {
+    private static final Identifier MISSING_TEXTURE = new Identifier("minecraft:missingno");
     // Tangent axes for increasing face U and V, in Direction order.
     private static final int[][][] UV_AXES={{{1,0,0},{0,0,-1}},{{1,0,0},{0,0,1}},{{-1,0,0},{0,-1,0}},
         {{1,0,0},{0,-1,0}},{{0,0,1},{0,-1,0}},{{0,0,-1},{0,-1,0}}};
@@ -22,7 +23,9 @@ public final class LegacyBlockModels {
     public LegacyBlockModels(Function<Identifier,String> resources) { this.resources=resources; }
     public Set<Identifier> textures(Identifier block) {
         JsonObject state=states.computeIfAbsent(block,id -> read(new Identifier(id.getNamespace(),"blockstates/"+id.getPath()+".json")));
-        Set<Identifier> result=new LinkedHashSet<>(); collectTextures(state,result); return result;
+        Set<Identifier> result=new LinkedHashSet<>(); collectTextures(state,result);
+        result.remove(MISSING_TEXTURE); // TextureMap already owns this sprite; it has no PNG resource.
+        return result;
     }
     private void collectTextures(JsonElement element,Set<Identifier> result) {
         if (element.isJsonObject()) for (Map.Entry<String,JsonElement> entry : element.getAsJsonObject().entrySet()) {
@@ -100,7 +103,7 @@ public final class LegacyBlockModels {
         while (texture.startsWith("#")) {
             if (!visited.add(texture)) throw new IllegalArgumentException("Cyclic texture: "+id+texture);
             String resolved=definition.textures.get(texture.substring(1));
-            if (resolved==null) throw new IllegalArgumentException("Missing texture: "+id+texture);
+            if (resolved==null) return MISSING_TEXTURE;
             texture=resolved;
         }
         return new Identifier(texture);

@@ -34,7 +34,9 @@ public final class LegacyItemModels {
         models.put(id,model); return model;
     }
     public Set<Identifier> textures(Identifier root) {
-        Set<Identifier> result=new LinkedHashSet<>(); collect(root,result,new HashSet<>()); return result;
+        Set<Identifier> result=new LinkedHashSet<>(); collect(root,result,new HashSet<>());
+        result.remove(new Identifier("minecraft:missingno"));
+        return result;
     }
     private void collect(Identifier id,Set<Identifier> textures,Set<Identifier> seen) {
         if (!seen.add(id)) return;
