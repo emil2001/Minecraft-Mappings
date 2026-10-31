@@ -162,6 +162,21 @@ class BlockPlacementIntegrationTest {
     @Test void pendingNativeSoundsAreNotSubmittedTwice() throws Throwable {
         invoke(loader.loadClass("org.mtr.mapping.SoundCompatibilityScenarios").getConstructor().newInstance(),"pendingNativeSoundsAreNotSubmittedTwice");
     }
+    @Test void nativeTileInvalidationDispatchesRemovalHookOnce() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.TactileSoundScenarios").getConstructor().newInstance(),"nativeTileInvalidationDispatchesRemovalHookOnce");
+    }
+    @Test void removingSelectedTactileSourceStopsNativeSoundAndAllowsRestart() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.TactileSoundScenarios").getConstructor().newInstance(),"removingSelectedTactileSourceStopsNativeSoundAndAllowsRestart");
+    }
+    @Test void removingUnselectedTactileSourceKeepsActiveNativeSound() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.TactileSoundScenarios").getConstructor().newInstance(),"removingUnselectedTactileSourceKeepsActiveNativeSound");
+    }
+    @Test void remainingTactileSourceRestartsAfterSelectedMapRemoval() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.TactileSoundScenarios").getConstructor().newInstance(),"remainingTactileSourceRestartsAfterSelectedMapRemoval");
+    }
+    @Test void lowAltitudeTactileSourceHandoverDoesNotOverflow() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.TactileSoundScenarios").getConstructor().newInstance(),"lowAltitudeTactileSourceHandoverDoesNotOverflow");
+    }
     @Test void originalLoopsAreReleasedByNativeWorldStopAndCanRestart() throws Throwable {
         invoke(loader.loadClass("org.mtr.mapping.SoundCompatibilityScenarios").getConstructor().newInstance(),"originalLoopsAreReleasedByNativeWorldStopAndCanRestart");
     }

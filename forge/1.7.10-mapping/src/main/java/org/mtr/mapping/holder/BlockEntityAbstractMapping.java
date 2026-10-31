@@ -19,7 +19,10 @@ public abstract class BlockEntityAbstractMapping extends BlockStateTileEntity {
     public BlockState getCachedState2() { return worldObj == null ? initialState : new World(worldObj).getBlockState(getPos2()); }
     public void markDirty2() { super.markDirty(); }
     public boolean isRemoved2() { return isInvalid(); }
-    public void markRemoved2() { invalidate(); }
+    public void markRemoved2() { super.invalidate(); }
+    @Override public void invalidate() {
+        if (!isInvalid()) markRemoved2();
+    }
     @Override public void writeToNBT(NBTTagCompound tag) {
         BlockEntityFactoryRegistry.write(this, type, getCachedState2(), tag);
     }
