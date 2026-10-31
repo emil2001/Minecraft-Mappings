@@ -44,7 +44,8 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
         this.settings = settings;
         if (!settings.opaque) setLightOpacity(0);
         setHardness(settings.hardness);
-        setResistance(settings.hardness);
+        // Native setResistance multiplies by three, while the effective getter divides by five.
+        setResistance(settings.resistance == null ? settings.hardness : settings.resistance * 5F / 3F);
         // Native section counts are per block type; the hook checks the actual state before dispatch.
         setTickRandomly(RANDOM_TICKS.get(getClass()));
     }
@@ -125,6 +126,7 @@ public class BlockAbstractMapping extends net.minecraft.block.Block implements B
     }
     @Override protected boolean canSilkHarvest() { return false; }
     @Override public java.util.ArrayList<net.minecraft.item.ItemStack> getDrops(net.minecraft.world.World world, int x, int y, int z, int metadata, int fortune) {
+        if (!settings.drops) return new java.util.ArrayList<>();
         org.mtr.mapping.tool.BlockLootTable table = org.mtr.mapping.tool.BlockLootTable.forBlock(new Block(this));
         return table == null ? new java.util.ArrayList<>() : table.drops(new World(world).getBlockState(new BlockPos(x, y, z)));
     }

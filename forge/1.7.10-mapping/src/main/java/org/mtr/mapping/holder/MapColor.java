@@ -3,11 +3,21 @@ package org.mtr.mapping.holder;
 import org.mtr.mapping.tool.HolderBase;
 
 public final class MapColor extends HolderBase<net.minecraft.block.material.MapColor> {
-    public MapColor(net.minecraft.block.material.MapColor data) { super(data); }
-    public int getColorMapped() {
+    private final int color;
+    public MapColor(net.minecraft.block.material.MapColor data) {
         // MTR rail colors use the modern oak RGB; do not change the native vanilla map palette.
-        return data==net.minecraft.block.material.MapColor.woodColor?9402184:data.colorValue;
+        this(data, data == net.minecraft.block.material.MapColor.woodColor ? 9402184 : data.colorValue);
     }
+    private MapColor(net.minecraft.block.material.MapColor data, int color) { super(data); this.color = color; }
+    public int getColorMapped() {
+        return color;
+    }
+    public static MapColor getSpruceBrownMapped() { return new MapColor(net.minecraft.block.material.MapColor.woodColor, 8476209); }
+    public static MapColor getDarkGreenMapped() { return new MapColor(net.minecraft.block.material.MapColor.foliageColor); }
+    public static MapColor getDarkRedMapped() { return new MapColor(net.minecraft.block.material.MapColor.netherrackColor); }
+    public static MapColor getLightBlueGrayMapped() { return new MapColor(net.minecraft.block.material.MapColor.clayColor); }
+    public static MapColor getTerracottaOrangeMapped() { return new MapColor(net.minecraft.block.material.MapColor.adobeColor, 10441252); }
+    public static MapColor getGoldMapped() { return new MapColor(net.minecraft.block.material.MapColor.goldColor); }
     public static MapColor getBlackMapped() { return new MapColor(net.minecraft.block.material.MapColor.blackColor); }
     public static MapColor getBlueMapped() { return new MapColor(net.minecraft.block.material.MapColor.blueColor); }
     public static MapColor getBrownMapped() { return new MapColor(net.minecraft.block.material.MapColor.brownColor); }

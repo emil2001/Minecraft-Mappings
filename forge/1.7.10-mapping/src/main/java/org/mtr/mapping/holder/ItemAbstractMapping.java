@@ -6,7 +6,10 @@ public abstract class ItemAbstractMapping extends net.minecraft.item.Item {
     @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
     @Override public final boolean hasEffect(net.minecraft.item.ItemStack stack) { return hasGlint2(new ItemStack(stack)); }
     @Override public String getItemStackDisplayName(net.minecraft.item.ItemStack stack) {
-        return net.minecraft.util.StatCollector.translateToLocal(org.mtr.mapping.tool.LegacyTranslations.getTranslationKey(getUnlocalizedName(stack)));
+        return getName2(new ItemStack(stack)).getString();
+    }
+    public Text getName2(ItemStack stack) {
+        return Text.of(net.minecraft.util.StatCollector.translateToLocal(org.mtr.mapping.tool.LegacyTranslations.getTranslationKey(getUnlocalizedName(stack.data))));
     }
     @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
     @Override public void registerIcons(net.minecraft.client.renderer.texture.IIconRegister register) {

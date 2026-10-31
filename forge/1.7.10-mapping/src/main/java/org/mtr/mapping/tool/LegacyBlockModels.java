@@ -172,17 +172,17 @@ public final class LegacyBlockModels {
             String name=id.getPath().substring("models/block/".length()).replace(".json","");
             if (name.equals("block")) return new JsonObject();
             if (name.equals("air")) { JsonObject air=new JsonObject(); air.add("elements",new JsonArray()); return air; }
-            if (name.equals("cube_all") || name.equals("leaves") || name.equals("slab") || name.equals("slab_top")) return builtin(name);
+            if (name.equals("cube_all") || name.equals("cube_top") || name.equals("leaves") || name.equals("slab") || name.equals("slab_top")) return builtin(name);
         }
         throw new IllegalArgumentException("Missing block model resource: "+id);
     }
     private static JsonObject builtin(String name) {
         JsonObject model=new JsonObject(),element=new JsonObject(),faces=new JsonObject();
-        JsonObject textures=new JsonObject(); textures.addProperty("particle",name.startsWith("slab")?"#side":"#all"); model.add("textures",textures);
+        JsonObject textures=new JsonObject(); textures.addProperty("particle",name.startsWith("slab") || name.equals("cube_top")?"#side":"#all"); model.add("textures",textures);
         element.add("from",new JsonParser().parse("[0,"+(name.equals("slab_top")?8:0)+",0]"));
         element.add("to",new JsonParser().parse("[16,"+(name.equals("slab")?8:16)+",16]"));
         for (Direction side : Direction.values()) {
-            JsonObject face=new JsonObject(); face.addProperty("texture",name.startsWith("slab")?(side==Direction.UP?"#top":side==Direction.DOWN?"#bottom":"#side"):"#all");
+            JsonObject face=new JsonObject(); face.addProperty("texture",name.startsWith("slab")?(side==Direction.UP?"#top":side==Direction.DOWN?"#bottom":"#side"):name.equals("cube_top")?(side==Direction.UP?"#top":"#side"):"#all");
             if (name.equals("leaves")) face.addProperty("tintindex",0);
             if (!(name.equals("slab") && side==Direction.UP) && !(name.equals("slab_top") && side==Direction.DOWN)) face.addProperty("cullface",side.name().toLowerCase(Locale.ROOT));
             faces.add(side.name().toLowerCase(Locale.ROOT),face);

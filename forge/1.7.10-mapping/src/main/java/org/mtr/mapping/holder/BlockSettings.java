@@ -7,12 +7,16 @@ import java.util.function.ToIntFunction;
 
 public final class BlockSettings extends HolderBase<Material> {
     float hardness;
+    Float resistance;
+    boolean drops = true;
     boolean opaque = true;
     final boolean blockPiston;
     ToIntFunction<BlockState> luminance;
     public BlockSettings(Material material) { this(material,false); }
     public BlockSettings(Material material,boolean blockPiston) { super(material); this.blockPiston=blockPiston; }
-    public BlockSettings strength(float value) { hardness = value; return this; }
+    public BlockSettings strength(float value) { hardness = value; resistance = null; return this; }
+    public BlockSettings strength(float hardness, float resistance) { this.hardness = hardness; this.resistance = resistance; return this; }
+    public BlockSettings dropsNothing() { drops = false; return this; }
     public BlockSettings nonOpaque() { opaque = false; return this; }
     public BlockSettings luminance(ToIntFunction<BlockState> function) { luminance=Objects.requireNonNull(function); return this; }
 }

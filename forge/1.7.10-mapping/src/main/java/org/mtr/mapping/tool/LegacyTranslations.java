@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public final class LegacyTranslations {
-    static final String[] NAMESPACES = {"mtr", "mtrsteamloco", "yte"};
+    static final String[] NAMESPACES = {"mtr", "mtrsteamloco", "yte", "mtrfranceaddon"};
     private static final Pattern NUMERIC_ARGUMENT = Pattern.compile("%(\\d+\\$)?[\\d\\.]*[df]");
     private static boolean loaded;
     private static long lastUpdate;

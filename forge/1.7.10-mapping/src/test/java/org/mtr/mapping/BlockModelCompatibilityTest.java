@@ -9,6 +9,50 @@ import java.nio.file.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BlockModelCompatibilityTest {
+    @Test void francePlatformCubeTopDecodesSixFacesAndSideParticle() {
+        Map<String,String> resources=new HashMap<>();
+        // The authored France sncf_platform block and item resource chain.
+        resources.put("mtrfranceaddon:models/block/sncf_platform.json","{\"parent\":\"minecraft:block/cube_top\",\"textures\":{\"top\":\"mtrfranceaddon:block/platform_sncf\",\"side\":\"minecraft:block/smooth_stone\"}}");
+        resources.put("mtrfranceaddon:models/item/sncf_platform.json","{\"parent\":\"mtrfranceaddon:block/sncf_platform\"}");
+        resources.put("mtrfranceaddon:blockstates/sncf_platform.json","{\"variants\":{\"\":{\"model\":\"mtrfranceaddon:block/sncf_platform\"}}}");
+        LegacyBlockModels models=new LegacyBlockModels(id -> resources.get(id.toString()));
+        assertCubeTop(models.model(new Identifier("mtrfranceaddon:item/sncf_platform")),
+            new Identifier("mtrfranceaddon:block/platform_sncf"),new Identifier("minecraft:block/smooth_stone"));
+        assertEquals(new Identifier("minecraft:block/smooth_stone"),models.particle(new Identifier("mtrfranceaddon:sncf_platform"),Collections.emptyMap(),0));
+        assertEquals(new HashSet<>(Arrays.asList(new Identifier("mtrfranceaddon:block/platform_sncf"),new Identifier("minecraft:block/smooth_stone"))),
+            models.textures(new Identifier("mtrfranceaddon:sncf_platform")));
+    }
+
+    @Test void cubeTopInheritanceResolvesChildTopAndSideTextureOverrides() {
+        Map<String,String> resources=new HashMap<>();
+        resources.put("mtrfranceaddon:models/block/base.json","{\"parent\":\"minecraft:block/cube_top\",\"textures\":{\"top\":\"mtrfranceaddon:block/base_top\",\"side\":\"mtrfranceaddon:block/base_side\"}}");
+        resources.put("mtrfranceaddon:models/block/child.json","{\"parent\":\"mtrfranceaddon:block/base\",\"textures\":{\"top\":\"mtrfranceaddon:block/child_top\",\"side\":\"mtrfranceaddon:block/child_side\"}}");
+        resources.put("mtrfranceaddon:blockstates/probe.json","{\"variants\":{\"\":{\"model\":\"mtrfranceaddon:block/child\"}}}");
+        LegacyBlockModels models=new LegacyBlockModels(id -> resources.get(id.toString()));
+        assertCubeTop(models.resolve(new Identifier("mtrfranceaddon:probe"),Collections.emptyMap(),0),
+            new Identifier("mtrfranceaddon:block/child_top"),new Identifier("mtrfranceaddon:block/child_side"));
+        assertEquals(new Identifier("mtrfranceaddon:block/child_side"),models.particle(new Identifier("mtrfranceaddon:probe"),Collections.emptyMap(),0));
+    }
+
+    private static void assertCubeTop(List<LegacyBlockModels.Quad> quads,Identifier top,Identifier side) {
+        assertEquals(6,quads.size());
+        Set<Direction> faces=new HashSet<>();
+        for (LegacyBlockModels.Quad quad : quads) {
+            assertNotNull(quad.cull);
+            assertTrue(faces.add(quad.cull),"Each cube face must appear once");
+            assertEquals(quad.cull==Direction.UP?top:side,quad.texture);
+            assertEquals(-1,quad.tint);
+            assertTrue(quad.shade);
+            for (int vertex=0;vertex<4;vertex++) {
+                float x=quad.vertices[vertex*8],y=quad.vertices[vertex*8+1],z=quad.vertices[vertex*8+2];
+                assertTrue(x==0 || x==1); assertTrue(y==0 || y==1); assertTrue(z==0 || z==1);
+                if (quad.cull==Direction.UP) assertEquals(1F,y);
+                if (quad.cull==Direction.DOWN) assertEquals(0F,y);
+            }
+        }
+        assertEquals(new HashSet<>(Arrays.asList(Direction.values())),faces);
+    }
+
     @Test void particleAliasesInheritAndParticipateInTextureStitching() {
         Map<String,String> resources=new HashMap<>();
         resources.put("mtr:models/block/base.json","{\"parent\":\"block/cube_all\",\"textures\":{\"all\":\"mtr:block/red\",\"particle\":\"#dust\"}}");
