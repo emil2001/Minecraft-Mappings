@@ -81,7 +81,48 @@ class VehicleDoorSoundTest {
         tick(sound, 0, .1);
         for (int index = 0; index < 4; index++) tick(sound, 0, 0);
         sound.playDoorSound(POSITION, 0, 0);
-        assertTrue(sound.calls.isEmpty(), "A skipped opening must not play after the doors have closed again");
+        assertEquals(Arrays.asList(false), sound.calls, "A short opening must retain closing without replaying the obsolete opening");
+    }
+
+    @Test void partiallyOpenedDoorsStillCaptureOneClosingSound() throws Exception {
+        Probe sound = new Probe(1);
+        tick(sound, .2, 0);
+        sound.playDoorSound(POSITION, .2, 0);
+        tick(sound, .8, .2);
+        tick(sound, .7, .8);
+        tick(sound, .6, .7);
+        sound.playDoorSound(POSITION, .6, .7);
+        tick(sound, .3, .6);
+        sound.playDoorSound(POSITION, .3, .6);
+        assertEquals(Arrays.asList(true, false), sound.calls, "Closing must not require reaching exactly fully open first");
+    }
+
+    @Test void partialOpeningPreservesTheConfiguredLaterClosingThreshold() throws Exception {
+        Probe sound = new Probe(.5);
+        tick(sound, .2, 0);
+        sound.playDoorSound(POSITION, .2, 0);
+        tick(sound, .8, .2);
+        tick(sound, .7, .8);
+        sound.playDoorSound(POSITION, .7, .8);
+        tick(sound, .5, .7);
+        sound.playDoorSound(POSITION, .5, .7);
+        assertEquals(Arrays.asList(true), sound.calls);
+        tick(sound, .4, .5);
+        sound.playDoorSound(POSITION, .4, .5);
+        assertEquals(Arrays.asList(true, false), sound.calls);
+    }
+
+    @Test void partialReopeningCanBeFollowedByAnotherClosingAttempt() throws Exception {
+        Probe sound = opened(1);
+        tick(sound, .9, 1);
+        tick(sound, .95, .9);
+        sound.playDoorSound(POSITION, .95, .9);
+        assertEquals(Arrays.asList(true), sound.calls, "The canceled closing must not play while reopening");
+        tick(sound, .9, .95);
+        sound.playDoorSound(POSITION, .9, .95);
+        tick(sound, .8, .9);
+        sound.playDoorSound(POSITION, .8, .9);
+        assertEquals(Arrays.asList(true, false), sound.calls, "Reopening below one must still re-arm the closing sound");
     }
 
     @Test void firstRenderCanCaptureAnEdgeBeforeTheFirstPersistentTick() {
