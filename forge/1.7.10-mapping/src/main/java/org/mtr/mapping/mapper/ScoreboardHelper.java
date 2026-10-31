@@ -12,7 +12,8 @@ public final class ScoreboardHelper {
             ScoreboardCriterionRenderType renderType) {
         java.util.Objects.requireNonNull(renderType);
         net.minecraft.scoreboard.ScoreObjective objective = board.data.addScoreObjective(name, criterion.data);
-        objective.setDisplayName(title.data.getFormattedText().replaceFirst("(?:§r)+$", ""));
+        // Native formatted-text rendering is client-only in 1.7.10.
+        objective.setDisplayName(title.getString());
         return new ScoreboardObjective(objective);
     }
     public static int getPlayerScore(Scoreboard board, String name, ScoreboardObjective objective) {
