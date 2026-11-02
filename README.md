@@ -6,6 +6,8 @@ This fork builds on [Minecraft Mappings](https://github.com/Minecraft-Transit-Ra
 
 ## Building
 
+The delivered MTR `4.0.5-gtnh.18` uses mapping source `ba6cdf9d0cd70c2ba97f1b40fd0a8c522ae4ab95`, including the dedicated-server ticket-barrier fix.
+
 The 1.7.10 backend is in `forge/1.7.10-mapping` and uses Java 21 and Gradle 8.14. [BUILDING.md](BUILDING.md) links the shared checkout layout, external input requirements and build commands. Retrieval of every dependency in a fresh environment remains untested.
 
 ## License and credits
