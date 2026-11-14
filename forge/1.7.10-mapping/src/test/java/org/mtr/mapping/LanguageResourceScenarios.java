@@ -46,6 +46,44 @@ public class LanguageResourceScenarios {
         assertThrows(IllegalArgumentException.class, () -> LegacyTranslations.readJson(stream("[]")));
     }
 
+    public void clientJsonOverlayPreservesRuntimeMaterialTranslationsAndRemovesStaleJsonOnReload() {
+        StringTranslate translator = ReflectionHelper.getPrivateValue(StringTranslate.class, null, "instance", "field_74817_a");
+        Map<String, String> before = new HashMap<>((Map<String, String>) ReflectionHelper.getPrivateValue(StringTranslate.class,
+            translator, "languageList", "field_74816_c"));
+        try {
+            IMetadataSerializer serializer = new IMetadataSerializer();
+            LanguageManager languages = new LanguageManager(serializer, "en_US");
+            SimpleReloadableResourceManager resources = new SimpleReloadableResourceManager(serializer);
+            MemoryPack pack = new MemoryPack();
+            pack.files.put("lang/en_us.json", "{\"mtr.test.floor\":\"Floor\",\"mtr.test.removed\":\"Removed\"}");
+            List<IResourcePack> packs = Collections.singletonList(pack);
+            languages.parseLanguageMetadata(packs);
+            resources.reloadResources(packs);
+            resources.registerReloadListener(languages);
+            resources.registerReloadListener(manager -> StringTranslate.inject(stream(
+                "Material.magnetite=Runtime Magnetite\nMaterial.gold=Runtime Gold\nmtr.test.floor=Outdated floor\n")));
+            assertEquals("Runtime Magnetite", net.minecraft.util.StatCollector.translateToLocal("Material.magnetite"));
+            assertEquals("Material.magnetite", I18n.format("Material.magnetite"));
+
+            resources.registerReloadListener(new LegacyClientTranslations(languages));
+            assertEquals("Runtime Magnetite & Runtime Gold", net.minecraft.util.StatCollector.translateToLocal("Material.magnetite")
+                + " & " + net.minecraft.util.StatCollector.translateToLocal("Material.gold"));
+            org.mtr.mapping.holder.MutableText cached = TextHelper.translatable("mtr.test.floor");
+            assertEquals("Floor", cached.getString());
+            assertEquals("Floor", I18n.format("mtr.test.floor"));
+            assertEquals("Removed", net.minecraft.util.StatCollector.translateToLocal("mtr.test.removed"));
+
+            pack.files.put("lang/en_us.json", "{\"mtr.test.floor\":\"Updated floor\"}");
+            resources.reloadResources(packs);
+            assertEquals("Runtime Magnetite & Runtime Gold", net.minecraft.util.StatCollector.translateToLocal("Material.magnetite")
+                + " & " + net.minecraft.util.StatCollector.translateToLocal("Material.gold"));
+            assertEquals("Updated floor", cached.getString());
+            assertEquals("Updated floor", I18n.format("mtr.test.floor"));
+            assertFalse(net.minecraft.util.StatCollector.canTranslate("mtr.test.removed"));
+            assertEquals("mtr.test.removed", I18n.format("mtr.test.removed"));
+        } finally { StringTranslate.replaceWith(before); }
+    }
+
     public void nativeResourceReloadUsesSelectedJsonLanguagePackPriorityAndEnglishFallback() {
         StringTranslate translator = ReflectionHelper.getPrivateValue(StringTranslate.class, null, "instance", "field_74817_a");
         Map<String, String> before = new HashMap<>((Map<String, String>) ReflectionHelper.getPrivateValue(StringTranslate.class,

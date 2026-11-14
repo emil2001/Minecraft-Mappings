@@ -41,7 +41,7 @@ public final class LegacyTranslations {
         StringTranslate translator = ReflectionHelper.getPrivateValue(StringTranslate.class, null, "instance", "field_74817_a");
         synchronized (translator) {
             Map<String, String> nativeStrings = ReflectionHelper.getPrivateValue(StringTranslate.class, translator, "languageList", "field_74816_c");
-            if (replace) nativeStrings.clear();
+            // Client Locale omits translations injected directly by other mods; native reload already clears stale entries.
             nativeStrings.putAll(strings);
             // Native replaceWith can reuse one millisecond; cached chat components need a distinct version per reload.
             lastUpdate = Math.max(System.currentTimeMillis(), Math.max(lastUpdate, translator.getLastUpdateTimeInMilliseconds()) + 1);

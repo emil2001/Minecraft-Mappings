@@ -477,6 +477,10 @@ class BlockPlacementIntegrationTest {
         invoke(loader.loadClass("org.mtr.mapping.LanguageResourceScenarios").getConstructor().newInstance(),
             "nativeResourceReloadUsesSelectedJsonLanguagePackPriorityAndEnglishFallback");
     }
+    @Test void clientJsonOverlayPreservesRuntimeMaterialTranslationsAndRemovesStaleJsonOnReload() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.LanguageResourceScenarios").getConstructor().newInstance(),
+            "clientJsonOverlayPreservesRuntimeMaterialTranslationsAndRemovesStaleJsonOnReload");
+    }
     @Test void nativeItemAndBlockDisplayNamesUseModernTranslationKeys() throws Throwable {
         invoke(loader.loadClass("org.mtr.mapping.LanguageResourceScenarios").getConstructor().newInstance(),
             "nativeItemAndBlockDisplayNamesUseModernTranslationKeys");

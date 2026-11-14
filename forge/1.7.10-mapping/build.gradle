@@ -207,10 +207,11 @@ sourceSets.test.runtimeClasspath += files(mtrBlockTestClasses,
 
 tasks.register('compileMtrApi', JavaCompile) {
     description = 'Reports remaining source API gaps against all common MTR game code; does not package a mod.'
-    dependsOn classes
+    dependsOn classes, prepareCoreForTests
     source fileTree('../../../mtr/fabric/src/main/java') { include 'org/mtr/mod/**/*.java', 'org/mtr/legacy/**/*.java' }
     source fileTree('../../../mtr/gtnh/src/game/java')
     classpath = sourceSets.main.output + sourceSets.main.compileClasspath + files(
+        '../../../mtr/gtnh/build/classes/java/main',
         '../../../mtr/libs/Transport-Simulation-Core-0.0.1.jar',
         '../../../mtr/libs/Shadow-Libraries-util-0.0.1.jar',
         '../../../mtr/libs/Shadow-Libraries-net-0.0.1.jar')
