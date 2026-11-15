@@ -6,7 +6,7 @@ This fork builds on [Minecraft Mappings](https://github.com/Minecraft-Transit-Ra
 
 ## Building
 
-The `fix/boarding-first-packet` branch pairs with MTR `4.0.5-gtnh.21`. It sets the assembly version and adds native packet regressions for immediate first boarding, repeated doorway frames and overlapping cars. The full backend suite passed 391 tests with no failures and one optional addon-resource skip.
+The `fix/boarding-first-packet` branch pairs with MTR `4.0.5-gtnh.21`. It sets the assembly version and adds native packet regressions for immediate first boarding, repeated doorway frames and overlapping cars. Passenger cleanup skips network publication once the native server is stopping. Its regression checks that the real sender still queues packets while running and that shutdown clears gravity, collision and teleport authority. The full backend suite passed 392 tests with no failures and one optional addon-resource skip.
 
 The 1.7.10 backend is in `forge/1.7.10-mapping` and uses Java 21 and Gradle 8.14. [BUILDING.md](BUILDING.md) links the shared checkout layout, external input requirements and build commands. Retrieval of every dependency in a fresh environment remains untested.
 

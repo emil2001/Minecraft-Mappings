@@ -14,6 +14,9 @@ class PlayerGravitySyncTest {
     @Test void serverRevocationExpiresTheClientFlagAndClientPacketsGrantNoAuthority() throws Throwable {
         run("serverRevocationExpiresTheClientFlagAndClientPacketsGrantNoAuthority");
     }
+    @Test void stoppedServerRevocationClearsNativeFlagsWithoutEnqueuingOwnerPacket() throws Throwable {
+        run("stoppedServerRevocationClearsNativeFlagsWithoutEnqueuingOwnerPacket");
+    }
     private static void run(String method) throws Throwable {
         BlockPlacementIntegrationTest.invoke(BlockPlacementIntegrationTest.loader.loadClass(
             "org.mtr.mapping.registry.PlayerGravitySyncScenarios").getConstructor().newInstance(), method);
