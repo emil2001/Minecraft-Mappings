@@ -109,6 +109,35 @@ public final class PlayerGravitySyncScenarios {
         }
     }
 
+    public void stoppedServerRevocationClearsNativeFlagsWithoutEnqueuingOwnerPacket() throws Exception {
+        try (Fixture f=new Fixture()) {
+            f.authorize(); f.player.setNoGravity(true); f.player.setInTeleportationState(true); f.player.setNoClipMapped(true);
+            assertTrue(PlayerPhysics.authorized(f.server.player)); assertTrue(f.server.player.noClip);
+            assertEquals(0,PlayerPhysics.gravity(.08,f.server.player),0);
+            assertEquals(1,f.outgoing.size(),"Running server must still publish the initial no-gravity flag");
+            assertSame(f.server.server,f.server.player.mcServer); assertTrue(f.serverManager.isChannelOpen());
+            assertNotNull(f.nativeServerSink,"The regression must exercise the actual registered packet sink");
+            f.restore("serverSink",f.nativeServerSink);
+            Field servers=GameThreadQueues.class.getDeclaredField("SERVERS"); servers.setAccessible(true);
+            Map<?,?> queues=(Map<?,?>)servers.get(null);
+            Field tasks=org.mtr.mapping.tool.GameTaskQueue.class.getDeclaredField("tasks"); tasks.setAccessible(true);
+            Object queue=queues.get(f.server.server); int before=0;
+            if(queue!=null) synchronized(queue) { before=((Collection<?>)tasks.get(queue)).size(); }
+            assertTrue(f.server.server.isServerRunning());
+            LegacyPlayerPhysics.syncNoGravity(f.server.player,true);
+            queue=queues.get(f.server.server); assertNotNull(queue,"The actual running-server sink must create or reuse its native task queue");
+            synchronized(queue) { assertEquals(before+1,((Collection<?>)tasks.get(queue)).size(),"The actual running-server sink must enqueue its owner packet"); }
+            f.server.player.fallDistance=7;
+            f.server.server.initiateShutdown(); assertFalse(f.server.server.isServerRunning());
+            assertThrows(java.util.concurrent.RejectedExecutionException.class,()->GameThreadQueues.server(f.server.server,()->{}),
+                "The native server queue must already reject work before cleanup");
+            assertDoesNotThrow(()->PlayerPhysics.revoke(f.server.player),"Shutdown cleanup must not attempt a final owner packet on a stopped server");
+            assertFalse(f.server.player.noClip); assertEquals(0,f.server.player.fallDistance,0);
+            assertFalse(PlayerPhysics.authorized(f.server.player)); assertEquals(.08,PlayerPhysics.gravity(.08,f.server.player),0);
+            assertEquals(100,PlayerPhysics.movementLimit(f.server.player.playerNetServerHandler),0,"Teleport privilege must be gone too");
+        }
+    }
+
     private static net.minecraft.util.Session session(String name) {
         return new net.minecraft.util.Session(name,UUID.randomUUID().toString(),"","legacy");
     }
@@ -133,7 +162,7 @@ public final class PlayerGravitySyncScenarios {
         final NetHandlerPlayClient handler;
         final EventBus bus;
         final Class<?> bridge;
-        final Object previousServerSink,previousClientSink;
+        final Object previousServerSink,previousClientSink,nativeServerSink;
         EntityClientPlayerMP local;
         int delivered;
         Fixture() throws Exception {
@@ -146,6 +175,7 @@ public final class PlayerGravitySyncScenarios {
             channel.set(manager,clientChannel); channel.set(serverManager,serverChannel);
             new NetHandlerPlayServer(server.server,serverManager,server.player);
             registry.setupPackets(new Identifier(channelName));
+            nativeServerSink=field("serverSink");
             if (bridge!=null) {
                 assertNotNull(field("serverSink"),"The existing Registry must bind the owner packet channel");
                 restore("serverSink",(java.util.function.BiConsumer<net.minecraft.entity.player.EntityPlayerMP,Boolean>)(recipient,value) -> {

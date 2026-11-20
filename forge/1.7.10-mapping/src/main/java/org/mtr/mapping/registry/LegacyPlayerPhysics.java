@@ -16,7 +16,8 @@ public final class LegacyPlayerPhysics {
     static void register(Registry registry) {
         registry.registerPacket(NoGravityPacket.class, NoGravityPacket::new);
         serverSink = (player, value) -> {
-            if (player.playerNetServerHandler != null && player.playerNetServerHandler.netManager.isChannelOpen())
+            if (player.mcServer != null && player.mcServer.isServerRunning()
+                    && player.playerNetServerHandler != null && player.playerNetServerHandler.netManager.isChannelOpen())
                 registry.sendPacketToClient(new ServerPlayerEntity(player),
                     new NoGravityPacket(player.dimension, player.getEntityId(), value));
         };

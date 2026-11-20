@@ -3,6 +3,9 @@ import org.junit.jupiter.api.*;
 class ClientRidingGeometryTest {
     @BeforeAll static void setup() throws Throwable { BlockPlacementIntegrationTest.setupForgeLoader(); }
     @AfterAll static void close() throws Exception { BlockPlacementIntegrationTest.closeForgeLoader(); }
+    @Test void firstLiftAndTrainEntryImmediatelyPublishesTheAuthenticatedRider() throws Throwable { run("firstLiftAndTrainEntryImmediatelyPublishesTheAuthenticatedRider"); }
+    @Test void repeatedDoorwayFramesDoNotRepublishTheSameCar() throws Throwable { run("repeatedDoorwayFramesDoNotRepublishTheSameCar"); }
+    @Test void overlappingCarsMayChangeLocalSelectionWithoutRepublishingInitialRide() throws Throwable { run("overlappingCarsMayChangeLocalSelectionWithoutRepublishingInitialRide"); }
     @Test void unavailableGeometryKeepsOnlySelectedRiderStationaryBeyondOriginalCooldown() throws Throwable { run("unavailableGeometryKeepsOnlySelectedRiderStationaryBeyondOriginalCooldown"); }
     @Test void readyGeometryResumesOriginalMovementAndReadyEmptyStillDismounts() throws Throwable { run("readyGeometryResumesOriginalMovementAndReadyEmptyStillDismounts"); }
     @Test void unavailableGeometryBudgetCannotRenewAndReadyGeometryStartsANewEpisode() throws Throwable { run("unavailableGeometryBudgetCannotRenewAndReadyGeometryStartsANewEpisode"); }
