@@ -75,6 +75,10 @@ class BlockPlacementIntegrationTest {
     @Test void nativeRiderGravityAndMovementGuardsRestoreOnDismount() throws Throwable {
         invoke(loader.loadClass("org.mtr.mapping.registry.PlayerMovementScenarios").getConstructor().newInstance(),"nativeRiderGravityAndMovementGuardsRestoreOnDismount");
     }
+    @Test void liftDescentDoesNotDamagePassengerAndFallAfterExitStillDoes() throws Throwable {
+        invoke(loader.loadClass("org.mtr.mapping.registry.PlayerMovementScenarios").getConstructor().newInstance(),
+            "liftDescentDoesNotDamagePassengerAndFallAfterExitStillDoes");
+    }
     @Test void movementRejectsNonFinitePositionsAndAnglesEvenDuringRiding() throws Throwable {
         invoke(loader.loadClass("org.mtr.mapping.registry.PlayerMovementScenarios").getConstructor().newInstance(),"movementRejectsNonFinitePositionsAndAnglesEvenDuringRiding");
     }
