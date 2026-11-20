@@ -1,10 +1,12 @@
 package org.mtr.mapping.registry;
 
+import net.minecraft.init.Blocks;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C03PacketPlayer;
 import org.mtr.mapping.holder.ServerPlayerEntity;
+import org.mtr.mapping.tool.PlayerPhysics;
 import static org.junit.jupiter.api.Assertions.*;
 
 public final class PlayerMovementScenarios {
@@ -61,11 +63,54 @@ public final class PlayerMovementScenarios {
         }
     }
 
+    public void liftDescentDoesNotDamagePassengerAndFallAfterExitStillDoes() throws Exception {
+        try (ServerLifecycleScenarios.ServerFixture fixture = new ServerLifecycleScenarios.ServerFixture()) {
+            Handler handler = new Handler(fixture);
+            fixture.player.theItemInWorldManager.setGameType(net.minecraft.world.WorldSettings.GameType.SURVIVAL);
+            fixture.server.setAllowPvp(true); // Use the dedicated server's normal fall damage during spawn protection.
+            fixture.world.setBlock(0,94,0,Blocks.stone);
+            fixture.world.setBlock(1,89,0,Blocks.stone);
+            fixture.player.setPosition(.5,100,.5);
+            ServerPlayerEntity player = new ServerPlayerEntity(fixture.player);
+            authorize(fixture);
+            player.setNoGravity(true);
+            player.setInTeleportationState(true);
+            player.setNoClipMapped(true);
+            final float health = fixture.player.getHealth();
+
+            // Multiple position packets may arrive before any riding tick clears the accumulated distance.
+            for (int y = 99; y >= 95; y--) {
+                handler.processPlayer(position(.5,y,.5));
+            }
+            final float cabinFallDistance = fixture.player.fallDistance;
+            handler.processPlayer(position(.5,95,.5,true));
+            assertEquals(95,fixture.player.posY,0);
+            assertEquals(0,handler.corrections);
+            assertNull(handler.kick);
+            assertEquals(health,fixture.player.getHealth(),0,"Landing at a floor must not damage the lift passenger");
+            assertEquals(0,cabinFallDistance,0,"Cabin movement must not accumulate fall distance between ticks");
+
+            PlayerPhysics.revoke(fixture.player);
+            handler.processPlayer(position(1.5,95,.5));
+            for (int y = 94; y >= 90; y--) {
+                handler.processPlayer(position(1.5,y,.5));
+            }
+            handler.processPlayer(position(1.5,90,.5,true));
+            assertEquals(90,fixture.player.posY,0);
+            assertEquals(0,handler.corrections);
+            assertNull(handler.kick);
+            assertEquals(health - 2,fixture.player.getHealth(),0,"A normal five-block fall after exit must still deal damage");
+        }
+    }
+
     private static C03PacketPlayer position(double x,double y,double z) {
-        return new C03PacketPlayer.C04PacketPlayerPosition(x,y,y+1.62,z,false);
+        return position(x,y,z,false);
+    }
+    private static C03PacketPlayer position(double x,double y,double z,boolean onGround) {
+        return new C03PacketPlayer.C04PacketPlayerPosition(x,y,y+1.62,z,onGround);
     }
     private static void authorize(ServerLifecycleScenarios.ServerFixture fixture) {
-        org.mtr.mapping.tool.PlayerPhysics.authorize(fixture.player,java.util.Collections.singletonList(
+        PlayerPhysics.authorize(fixture.player,java.util.Collections.singletonList(
             net.minecraft.util.AxisAlignedBB.getBoundingBox(-2,95,-2,25,110,2)),fixture.world.getTotalWorldTime()+60);
     }
     public void ridingNeedsFreshServerGeometryAndCannotMoveOutsideTheSelectedCar() throws Exception {

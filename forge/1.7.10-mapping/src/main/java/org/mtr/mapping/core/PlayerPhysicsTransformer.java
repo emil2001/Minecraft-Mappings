@@ -6,11 +6,12 @@ import org.objectweb.asm.*;
 public final class PlayerPhysicsTransformer implements IClassTransformer {
     private static final String HOOK="org/mtr/mapping/tool/PlayerPhysics";
     private static final String HANDLER="Lnet/minecraft/network/NetHandlerPlayServer;";
+    private static final String PLAYER="net/minecraft/entity/player/EntityPlayerMP";
     @Override public byte[] transform(String name,String transformedName,byte[] bytes) {
         boolean living="net.minecraft.entity.EntityLivingBase".equals(transformedName);
         boolean network="net.minecraft.network.NetHandlerPlayServer".equals(transformedName);
         if (bytes==null || !living && !network) return bytes;
-        ClassWriter writer=new ClassWriter(ClassWriter.COMPUTE_MAXS); int[] gravity={0},speed={0},flight={0},movement={0};
+        ClassWriter writer=new ClassWriter(ClassWriter.COMPUTE_MAXS); int[] gravity={0},speed={0},flight={0},movement={0},falling={0};
         new ClassReader(bytes).accept(new ClassVisitor(Opcodes.ASM4,writer) {
             @Override public MethodVisitor visitMethod(int access,String method,String desc,String signature,String[] exceptions) {
                 MethodVisitor visitor=super.visitMethod(access,method,desc,signature,exceptions);
@@ -39,6 +40,12 @@ public final class PlayerPhysicsTransformer implements IClassTransformer {
                         } else super.visitLdcInsn(value);
                     }
                     @Override public void visitMethodInsn(int opcode,String owner,String called,String descriptor) {
+                        if (move && opcode==Opcodes.INVOKEVIRTUAL && owner.equals(PLAYER) && descriptor.equals("(DZ)V")
+                                && (called.equals("handleFalling") || called.equals("func_71122_b"))) {
+                            super.visitMethodInsn(Opcodes.INVOKESTATIC,HOOK,"handleFalling","(L"+PLAYER+";DZ)V");
+                            falling[0]++;
+                            return;
+                        }
                         super.visitMethodInsn(opcode,owner,called,descriptor);
                         if (move && owner.equals("net/minecraft/server/MinecraftServer") && descriptor.equals("()Z")
                                 && (called.equals("isFlightAllowed") || called.equals("func_71231_X"))) {
@@ -49,8 +56,8 @@ public final class PlayerPhysicsTransformer implements IClassTransformer {
                 };
             }
         },0);
-        if (living && gravity[0]!=3 || network && (movement[0]!=1 || speed[0]!=1 || flight[0]!=1))
-            throw new IllegalStateException("Missing native rider physics hooks: "+transformedName+" gravity="+gravity[0]+",movement="+movement[0]+",speed="+speed[0]+",flight="+flight[0]);
+        if (living && gravity[0]!=3 || network && (movement[0]!=1 || speed[0]!=1 || flight[0]!=1 || falling[0]!=1))
+            throw new IllegalStateException("Missing native rider physics hooks: "+transformedName+" gravity="+gravity[0]+",movement="+movement[0]+",speed="+speed[0]+",flight="+flight[0]+",falling="+falling[0]);
         return writer.toByteArray();
     }
 }

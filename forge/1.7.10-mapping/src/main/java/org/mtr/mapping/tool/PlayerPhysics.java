@@ -12,6 +12,7 @@ import java.util.Collection;
 import net.minecraft.util.AxisAlignedBB;
 
 public final class PlayerPhysics {
+    private static final int NO_GRAVITY=1, TELEPORTING=2;
     // Riding flags belong to the current player object and must never survive a save/reconnect.
     private static final Map<EntityPlayerMP,State> FLAGS=new WeakHashMap<>();
     private static Entity clientNoGravity;
@@ -51,13 +52,13 @@ public final class PlayerPhysics {
             org.mtr.mapping.registry.LegacyPlayerPhysics.syncNoGravity(player,false);
         }
     }
-    private static synchronized boolean has(EntityPlayerMP player,int bit) {
-        return authorized(player) && (FLAGS.get(player).flags&bit)!=0;
+    private static synchronized boolean has(EntityPlayerMP player,int bits) {
+        return authorized(player) && (FLAGS.get(player).flags&bits)==bits;
     }
     public static synchronized void setNoGravity(EntityPlayerMP player,boolean value) {
-        boolean previous=has(player,1);
-        set(player,1,value);
-        boolean current=has(player,1);
+        boolean previous=has(player,NO_GRAVITY);
+        set(player,NO_GRAVITY,value);
+        boolean current=has(player,NO_GRAVITY);
         if (previous!=current) org.mtr.mapping.registry.LegacyPlayerPhysics.syncNoGravity(player,current);
     }
     public static void updateClientNoGravity(Entity player,int dimension,int entityId,boolean value) {
@@ -67,14 +68,22 @@ public final class PlayerPhysics {
         clientNoGravityDimension=dimension;
     }
     public static void clearClientNoGravity() { clientNoGravity=null; clientNoGravityWorld=null; }
-    public static void setTeleporting(EntityPlayerMP player,boolean value) { set(player,2,value); }
+    public static void setTeleporting(EntityPlayerMP player,boolean value) { set(player,TELEPORTING,value); }
     public static double gravity(double amount,Entity entity) {
         if (entity.worldObj.isRemote) return entity==clientNoGravity && entity.worldObj==clientNoGravityWorld
             && entity.dimension==clientNoGravityDimension?0:amount;
-        return entity instanceof EntityPlayerMP && has((EntityPlayerMP)entity,1)?0:amount;
+        return entity instanceof EntityPlayerMP && has((EntityPlayerMP)entity,NO_GRAVITY)?0:amount;
     }
-    public static double movementLimit(NetHandlerPlayServer handler) { return has(handler.playerEntity,2)?Double.POSITIVE_INFINITY:100; }
-    public static boolean allowFlight(boolean vanilla,NetHandlerPlayServer handler) { return vanilla || has(handler.playerEntity,2); }
+    public static double movementLimit(NetHandlerPlayServer handler) { return has(handler.playerEntity,TELEPORTING)?Double.POSITIVE_INFINITY:100; }
+    public static boolean allowFlight(boolean vanilla,NetHandlerPlayServer handler) { return vanilla || has(handler.playerEntity,TELEPORTING); }
+    public static void handleFalling(EntityPlayerMP player,double deltaY,boolean onGround) {
+        if (has(player,NO_GRAVITY|TELEPORTING)) {
+            // Several movement packets can arrive between riding ticks.
+            player.fallDistance=0;
+            deltaY=0;
+        }
+        player.handleFalling(deltaY,onGround);
+    }
     public static boolean validate(NetHandlerPlayServer handler,C03PacketPlayer packet) {
         if (packet.func_149466_j() && (!Double.isFinite(packet.func_149464_c()) || !Double.isFinite(packet.func_149467_d())
                 || !Double.isFinite(packet.func_149471_f()) || !Double.isFinite(packet.func_149472_e()))
@@ -82,9 +91,9 @@ public final class PlayerPhysics {
             handler.kickPlayerFromServer("Invalid movement");
             return false;
         }
-        if (packet.func_149466_j() && has(handler.playerEntity,2)) {
+        if (packet.func_149466_j() && has(handler.playerEntity,TELEPORTING)) {
             if (movementDeferrer.test(handler,packet)) return false;
-            boolean stillAuthorized=has(handler.playerEntity,2);
+            boolean stillAuthorized=has(handler.playerEntity,TELEPORTING);
             if (!stillAuthorized || !contains(handler.playerEntity,packet.func_149464_c(),packet.func_149467_d(),packet.func_149472_e())) {
             EntityPlayerMP player=handler.playerEntity;
             revoke(player);
